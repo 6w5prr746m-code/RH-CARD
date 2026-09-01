@@ -573,6 +573,24 @@ function showMulliganModal() {
   });
 }
 
+function statsSummaryHtml(playerId) {
+  const s = gameState.stats[playerId];
+  const mvpEntry = Object.entries(s.damageByCard).sort((a, b) => b[1] - a[1])[0];
+  const mvpName = mvpEntry ? (CARDS_BY_ID[mvpEntry[0]] ? CARDS_BY_ID[mvpEntry[0]].name : mvpEntry[0]) : '—';
+  const bestDomain = SYNERGY_DOMAINS.reduce((best, d) => (s.peakSynergyTier[d] || 0) > (s.peakSynergyTier[best] || 0) ? d : best, SYNERGY_DOMAINS[0]);
+  const bestTier = s.peakSynergyTier[bestDomain] || 0;
+  return `
+    <div style="flex:1; text-align:left; background:var(--bg-panel-2); border-radius:8px; padding:10px 14px; font-size:12.5px; line-height:1.7;">
+      <div style="font-weight:700; margin-bottom:4px;">${playerId === 'player' ? 'Vous' : "L'IA"}</div>
+      <div>Dégâts infligés : <b>${s.damageDealt}</b></div>
+      <div>Dégâts subis : <b>${s.damageTaken}</b></div>
+      <div>Soins prodigués : <b>${s.healingDone}</b></div>
+      <div>Cartes jouées : <b>${s.cardsPlayed}</b></div>
+      <div>Meilleure synergie : <b>${bestTier > 0 ? `${DOMAIN_LABELS[bestDomain]} palier ${bestTier}` : '—'}</b></div>
+      <div>Carte MVP : <b>${mvpName}</b>${mvpEntry ? ` (${mvpEntry[1]} dégâts)` : ''}</div>
+    </div>`;
+}
+
 function showGameOver() {
   const root = document.getElementById('modal-root');
   const won = gameState.winner === 'player';
@@ -582,9 +600,13 @@ function showGameOver() {
   else if (!draw) shakeScreen(10, 400);
   root.innerHTML = `
     <div class="modal-overlay">
-      <div class="modal-box gameover-box">
+      <div class="modal-box gameover-box" style="max-width:560px;">
         <h1 class="${draw ? '' : won ? 'win' : 'lose'}">${draw ? 'Égalité' : won ? 'Victoire !' : 'Défaite'}</h1>
         <p style="color:var(--text-dim);">${won ? 'PeopleSpheres a synchronisé tout le marché SIRH.' : draw ? 'Les deux héros tombent ensemble.' : "L'IA a pris le dessus cette fois."}</p>
+        <div style="display:flex; gap:10px; margin:14px 0;">
+          ${statsSummaryHtml('player')}
+          ${statsSummaryHtml('ai')}
+        </div>
         <div class="modal-actions" style="justify-content:center;">
           <button id="gameover-rematch" class="primary">Nouvelle partie (même deck)</button>
           <button id="gameover-builder">Deck builder</button>

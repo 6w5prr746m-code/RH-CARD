@@ -102,6 +102,10 @@ function createPlayerState(id, deckList) {
   };
 }
 
+function createStatsBucket() {
+  return { damageDealt: 0, damageTaken: 0, healingDone: 0, cardsPlayed: 0, damageByCard: {}, peakSynergyTier: {} };
+}
+
 function createGameState(playerDeckList, aiDeckList) {
   const state = {
     turnNumber: 1,
@@ -111,6 +115,7 @@ function createGameState(playerDeckList, aiDeckList) {
       player: createPlayerState('player', playerDeckList),
       ai: createPlayerState('ai', aiDeckList),
     },
+    stats: { player: createStatsBucket(), ai: createStatsBucket() },
     log: [],
     winner: null,
     pendingJob: null,
@@ -159,6 +164,7 @@ function startTurn(state, playerId, isVeryFirstTurn) {
 
   applyTurnStartSynergy(state, playerId);
   applyTurnStartCardAuras(state, playerId);
+  recordSynergyPeak(state);
   checkWinCondition(state);
   log(state, `--- Tour ${state.turnNumber} : ${playerId === 'player' ? 'vous' : "l'IA"} ---`);
 }
@@ -283,7 +289,9 @@ function drawCards(state, playerId, n) {
 function healHero(state, playerId, amount) {
   if (amount <= 0) return;
   const p = state.players[playerId];
+  const before = p.heroHp;
   p.heroHp = clamp(p.heroHp + amount, 0, p.heroMaxHp);
+  state.stats[playerId].healingDone += p.heroHp - before;
 }
 
 function heroDamageReduction(state, playerId) {
@@ -296,7 +304,7 @@ function heroDamageReduction(state, playerId) {
   return reduction;
 }
 
-function damageHero(state, playerId, amount, isFatigue) {
+function damageHero(state, playerId, amount, isFatigue, sourceCardId) {
   if (amount <= 0) return;
   const p = state.players[playerId];
   let dmg = amount;
@@ -304,8 +312,19 @@ function damageHero(state, playerId, amount, isFatigue) {
     const reduction = heroDamageReduction(state, playerId);
     dmg = dmg <= 0 ? 0 : Math.max(1, dmg - reduction);
   }
+  const before = p.heroHp;
   p.heroHp = clamp(p.heroHp - dmg, 0, p.heroMaxHp);
+  const actualDmg = before - p.heroHp;
+  state.stats[playerId].damageTaken += actualDmg;
+  if (!isFatigue) recordDamageDealt(state, opponentOf(playerId), sourceCardId, actualDmg);
   checkWinCondition(state);
+}
+
+function recordDamageDealt(state, dealerId, cardId, amount) {
+  if (amount <= 0) return;
+  const stats = state.stats[dealerId];
+  stats.damageDealt += amount;
+  if (cardId) stats.damageByCard[cardId] = (stats.damageByCard[cardId] || 0) + amount;
 }
 
 function checkWinCondition(state) {
@@ -417,6 +436,7 @@ function playCard(state, playerId, handUid) {
     card.hasAttackedThisTurn = false;
     p.board.push(card);
   }
+  state.stats[playerId].cardsPlayed += 1;
   log(state, `${playerId === 'player' ? 'Vous jouez' : "L'IA joue"} ${card.name}.`);
 
   const job = { type: 'onPlay', effects: (card.onPlay || []).slice(), stepIndex: 0, playerId, sourceCard: card };
@@ -740,9 +760,10 @@ function attack(state, playerId, attackerUid, targetType, targetUid) {
   let attackerAtk = getEffectiveAtk(state, playerId, attacker);
 
   if (targetType === 'hero') {
-    damageHero(state, opponentId, attackerAtk, false);
+    damageHero(state, opponentId, attackerAtk, false, attacker.cardId);
     attacker.hasAttackedThisTurn = true;
     log(state, `${cardLabel(playerId)} ${attacker.name} attaque le héros adverse (${attackerAtk} dégâts).`);
+    recordSynergyPeak(state);
     checkWinCondition(state);
     return { ok: true };
   }
@@ -768,6 +789,8 @@ function attack(state, playerId, attackerUid, targetType, targetUid) {
   defender.currentHp -= dmgToDefender;
   attacker.currentHp -= dmgToAttacker;
   attacker.hasAttackedThisTurn = true;
+  recordDamageDealt(state, playerId, attacker.cardId, dmgToDefender);
+  recordDamageDealt(state, opponentId, defender.cardId, dmgToAttacker);
 
   log(state, `${cardLabel(playerId)} ${attacker.name} (${attackerAtk} ATK) affronte ${defender.name} : ${dmgToDefender} dégâts infligés, ${dmgToAttacker} dégâts reçus.`);
 
@@ -788,7 +811,16 @@ function pointFaiblePair(a, b) {
 
 // ---------------------------------------------------------------- state-based actions
 
+function recordSynergyPeak(state) {
+  for (const pid of ['player', 'ai']) {
+    const tiers = getSynergyTiers(state.players[pid].board);
+    const peak = state.stats[pid].peakSynergyTier;
+    for (const d of SYNERGY_DOMAINS) peak[d] = Math.max(peak[d] || 0, tiers[d]);
+  }
+}
+
 function checkStateBasedActions(state) {
+  recordSynergyPeak(state);
   for (const playerId of ['player', 'ai']) {
     const p = state.players[playerId];
     const dead = p.board.filter(c => c.currentHp <= 0);
