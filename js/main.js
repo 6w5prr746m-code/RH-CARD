@@ -131,6 +131,7 @@ function offerResumeIfAny() {
 document.addEventListener('DOMContentLoaded', () => {
   initDeckBuilder();
   initBoardUI();
+  initCardZoom();
   showScreen('deckbuilder');
   offerResumeIfAny();
 

@@ -34,6 +34,81 @@ function humanSeat() {
 function otherSeat() { return opponentOf(humanSeat()); }
 function domPrefixFor(seatId) { return seatId === humanSeat() ? 'player' : 'ai'; }
 
+// ---------------------------------------------------------------- card zoom
+
+function resolveCardFromElement(el) {
+  if (el.dataset.uid) return (gameState && findCardAnywhere(gameState, el.dataset.uid)) || null;
+  if (el.dataset.choiceUid) return (gameState && findCardAnywhere(gameState, el.dataset.choiceUid)) || null;
+  if (el.dataset.id) return CARDS_BY_ID[el.dataset.id] || null;
+  return null;
+}
+
+function initCardZoom() {
+  document.addEventListener('contextmenu', (e) => {
+    const el = e.target.closest('[data-uid], [data-choice-uid], [data-id]');
+    if (!el) return;
+    e.preventDefault();
+    const card = resolveCardFromElement(el);
+    if (card) showCardZoom(card);
+  });
+
+  let pressTimer = null;
+  document.addEventListener('pointerdown', (e) => {
+    if (e.pointerType !== 'touch') return;
+    const el = e.target.closest('[data-uid], [data-choice-uid], [data-id]');
+    if (!el) return;
+    pressTimer = setTimeout(() => {
+      pressTimer = null;
+      const card = resolveCardFromElement(el);
+      if (card) { SFX.play('click'); showCardZoom(card); }
+    }, 550);
+  });
+  const cancelPress = () => { if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; } };
+  document.addEventListener('pointerup', cancelPress);
+  document.addEventListener('pointermove', cancelPress);
+  document.addEventListener('pointercancel', cancelPress);
+}
+
+function showCardZoom(card) {
+  const root = document.getElementById('zoom-root');
+  const color = DOMAIN_COLORS[card.domain] || '#666';
+  const isAction = card.cardType === 'ACTION';
+  const atk = card.currentAtk ?? card.atk;
+  const def = card.currentDef ?? card.def;
+  const hp = card.currentHp ?? card.hp;
+  const maxHp = card.maxHp ?? card.hp;
+  const cost = card.baseCost ?? card.cost;
+  root.innerHTML = `
+    <div class="modal-overlay" id="zoom-overlay">
+      <div class="card-zoom ${rarityClass(card.rarity)}" style="--dcolor:${color}">
+        <button class="card-zoom-close" aria-label="Fermer">✕</button>
+        <div class="cz-header">
+          <span class="domain-icon" style="font-size:24px;">${DOMAIN_ICONS[card.domain] || ''}</span>
+          <div>
+            <div class="cz-name">${card.name}</div>
+            <div class="cz-sub">${rarityLabel(card.rarity)} · ${DOMAIN_LABELS[card.domain] || ''}${isAction ? ' · <span class="action-tag">⚡ Action</span>' : ''}</div>
+          </div>
+          <div class="cz-cost">${cost}</div>
+        </div>
+        ${isAction ? '' : `
+        <div class="cz-stats">
+          <div><span class="mc-atk">${atk}</span>ATK</div>
+          <div><span class="mc-def">${def}</span>DEF</div>
+          <div><span class="mc-hp">${hp}${hp !== maxHp ? `/${maxHp}` : ''}</span>HP</div>
+        </div>`}
+        ${card.pointFaible ? '<div class="pf-tag" style="margin-bottom:10px;">⚠ Point Faible vs PeopleSpheres</div>' : ''}
+        <div class="cz-ability">${cardAbilityText(card)}</div>
+      </div>
+    </div>`;
+  document.getElementById('zoom-overlay').addEventListener('click', hideCardZoom);
+  root.querySelector('.card-zoom').addEventListener('click', (e) => e.stopPropagation());
+  root.querySelector('.card-zoom-close').addEventListener('click', hideCardZoom);
+}
+
+function hideCardZoom() {
+  document.getElementById('zoom-root').innerHTML = '';
+}
+
 function findCardAnywhere(state, uid) {
   for (const pid of ['player', 'ai']) {
     const p = state.players[pid];
