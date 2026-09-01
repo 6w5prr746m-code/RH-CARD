@@ -119,6 +119,12 @@ select {
 .card-tile .ability { color: var(--text-dim); font-size: 10.5px; line-height: 1.3; }
 .card-tile .pf-tag { color: var(--danger); font-size: 10px; font-weight: 700; margin-top: 4px; }
 .action-tag { color: var(--accent-2); font-weight: 700; }
+.owned-tag { color: var(--good); }
+
+.card-tile.locked { opacity: 0.5; cursor: not-allowed; filter: grayscale(0.6); }
+.card-tile.locked:hover { transform: none; }
+.card-tile.locked .name { color: var(--text-dim); }
+.card-tile .lock-icon { font-size: 20px; text-align: center; margin: 10px 0 6px; }
 
 .deck-panel {
   width: 320px;

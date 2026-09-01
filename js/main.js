@@ -5,6 +5,11 @@ let lastPlayerDeckList = null;
 function showScreen(name) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById(`screen-${name}`).classList.add('active');
+  if (name === 'deckbuilder') {
+    renderBoosterCount();
+    renderPool();
+    renderDeckPanel();
+  }
 }
 
 function startNewGame(playerDeckList) {

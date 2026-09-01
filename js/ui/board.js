@@ -596,13 +596,14 @@ function showGameOver() {
   const won = gameState.winner === 'player';
   const draw = gameState.winner === 'draw';
   SFX.play(won ? 'win' : draw ? 'turnStart' : 'lose');
-  if (won) spawnConfetti(90);
+  if (won) { spawnConfetti(90); addBoosters(1); }
   else if (!draw) shakeScreen(10, 400);
   root.innerHTML = `
     <div class="modal-overlay">
       <div class="modal-box gameover-box" style="max-width:560px;">
         <h1 class="${draw ? '' : won ? 'win' : 'lose'}">${draw ? 'Égalité' : won ? 'Victoire !' : 'Défaite'}</h1>
         <p style="color:var(--text-dim);">${won ? 'PeopleSpheres a synchronisé tout le marché SIRH.' : draw ? 'Les deux héros tombent ensemble.' : "L'IA a pris le dessus cette fois."}</p>
+        ${won ? '<p style="color:var(--accent-2); font-weight:700;">🎁 +1 booster gagné !</p>' : ''}
         <div style="display:flex; gap:10px; margin:14px 0;">
           ${statsSummaryHtml('player')}
           ${statsSummaryHtml('ai')}

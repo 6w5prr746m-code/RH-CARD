@@ -20,6 +20,10 @@ function maxCopiesFor(card) {
   return (card.rarity === 3 || card.rarity === 'L') ? 1 : 2;
 }
 
+function availableCopiesFor(card) {
+  return Math.min(maxCopiesFor(card), ownedCount(card.id));
+}
+
 function totalDeckSize() {
   return Object.values(builderState.counts).reduce((a, b) => a + b, 0);
 }
@@ -56,7 +60,7 @@ function initDeckBuilder() {
   document.getElementById('btn-random-deck').addEventListener('click', () => {
     SFX.play('click');
     builderState.counts = {};
-    for (const id of buildAiDeck()) {
+    for (const id of buildRandomOwnedDeckList()) {
       builderState.counts[id] = (builderState.counts[id] || 0) + 1;
     }
     renderPool();
@@ -70,7 +74,16 @@ function initDeckBuilder() {
     startNewGame(list);
   });
   document.getElementById('btn-mute-builder').addEventListener('click', (e) => toggleMuteButton(e.currentTarget));
+  document.getElementById('btn-open-booster').addEventListener('click', handleOpenBooster);
   attachHolographicTilt('#pool-grid', '.card-tile');
+  renderBoosterCount();
+}
+
+function renderBoosterCount() {
+  loadCollection();
+  const btn = document.getElementById('btn-open-booster');
+  btn.textContent = `🎁 Ouvrir un booster (${collectionState.boosters})`;
+  btn.disabled = collectionState.boosters <= 0;
 }
 
 function renderDomainTabs() {
@@ -101,8 +114,18 @@ function renderPool() {
 }
 
 function cardTileHtml(card) {
+  const owned = ownedCount(card.id);
+  if (owned === 0) {
+    return `
+      <div class="card-tile locked" data-id="${card.id}" style="--dcolor:#444">
+        <div class="lock-icon">🔒</div>
+        <div class="name">${card.name}</div>
+        <div class="stars">${rarityLabel(card.rarity)} · ${DOMAIN_LABELS[card.domain]}</div>
+        <div class="ability">Non débloquée — ouvrez un booster pour la découvrir.</div>
+      </div>`;
+  }
   const count = builderState.counts[card.id] || 0;
-  const max = maxCopiesFor(card);
+  const max = availableCopiesFor(card);
   const maxed = count >= max || totalDeckSize() >= DECK_MAX;
   const color = DOMAIN_COLORS[card.domain] || '#666';
   const isAction = card.cardType === 'ACTION';
@@ -111,7 +134,7 @@ function cardTileHtml(card) {
       <div class="cost-badge">${card.cost}</div>
       ${count > 0 ? `<div class="count-badge">×${count}</div>` : ''}
       <div class="name"><span class="domain-icon">${DOMAIN_ICONS[card.domain] || ''}</span>${card.name}</div>
-      <div class="stars">${rarityLabel(card.rarity)} · ${DOMAIN_LABELS[card.domain]}${isAction ? ' · <span class="action-tag">⚡ Action</span>' : ''}</div>
+      <div class="stars">${rarityLabel(card.rarity)} · ${DOMAIN_LABELS[card.domain]}${isAction ? ' · <span class="action-tag">⚡ Action</span>' : ''} · <span class="owned-tag">possédé ${owned}</span></div>
       ${isAction ? '' : `<div class="statline"><span>${card.atk} ATK</span><span>${card.def} DEF</span><span>${card.hp} HP</span></div>`}
       <div class="ability">${cardAbilityText(card)}</div>
       ${card.pointFaible ? '<div class="pf-tag">Point Faible</div>' : ''}
@@ -155,12 +178,53 @@ function renderDeckPanel() {
 function addCardToDeck(cardId) {
   const card = CARDS_BY_ID[cardId];
   if (!card) return;
+  if (ownedCount(cardId) === 0) { SFX.play('error'); flashError('Carte non débloquée — ouvrez un booster.'); return; }
   const count = builderState.counts[cardId] || 0;
-  if (count >= maxCopiesFor(card) || totalDeckSize() >= DECK_MAX) { SFX.play('error'); return; }
+  if (count >= availableCopiesFor(card) || totalDeckSize() >= DECK_MAX) { SFX.play('error'); return; }
   SFX.play('cardAdd');
   builderState.counts[cardId] = count + 1;
   renderPool();
   renderDeckPanel();
+}
+
+function handleOpenBooster() {
+  const picks = openBooster();
+  if (!picks) return;
+  SFX.play('cardPlay');
+  showBoosterModal(picks);
+}
+
+function showBoosterModal(cards) {
+  const root = document.getElementById('modal-root');
+  root.innerHTML = `
+    <div class="modal-overlay">
+      <div class="modal-box" style="max-width:700px; text-align:center;">
+        <h2>Nouveau booster !</h2>
+        <div class="modal-cards" id="booster-cards"></div>
+        <div class="modal-actions" style="justify-content:center;">
+          <button id="booster-continue" class="primary">Continuer</button>
+        </div>
+      </div>
+    </div>`;
+  const cardsEl = document.getElementById('booster-cards');
+  cards.forEach((card, i) => {
+    setTimeout(() => {
+      const wrap = document.createElement('div');
+      wrap.innerHTML = tinyCardHtml(card);
+      const node = wrap.firstElementChild;
+      node.classList.add('card-enter');
+      cardsEl.appendChild(node);
+      SFX.play(card.rarity === 3 ? 'legendary' : card.rarity === 2 ? 'synergy' : 'draw');
+      if (card.rarity === 3) spawnConfetti(25);
+    }, i * 350);
+  });
+  document.getElementById('booster-continue').addEventListener('click', () => {
+    SFX.play('click');
+    document.getElementById('modal-root').innerHTML = '';
+    renderBoosterCount();
+    renderPool();
+    renderDeckPanel();
+  });
 }
 
 function removeCardFromDeck(cardId) {
