@@ -21,6 +21,13 @@ function findCardAnywhere(state, uid) {
   return null;
 }
 
+let lastSeenTiers = null;
+
+function resetFxState() {
+  lastSeenTiers = {};
+  for (const d of SYNERGY_DOMAINS) lastSeenTiers[d] = 0;
+}
+
 function initBoardUI() {
   document.getElementById('player-hand').addEventListener('click', (e) => {
     const el = e.target.closest('.hand-card');
@@ -35,13 +42,88 @@ function initBoardUI() {
     if (el) onEnemyBoardCardClick(el.dataset.uid);
   });
   document.getElementById('ai-hero-target').addEventListener('click', onEnemyHeroClick);
-  document.getElementById('end-turn-btn').addEventListener('click', handleEndTurn);
+  document.getElementById('end-turn-btn').addEventListener('click', () => { SFX.play('click'); handleEndTurn(); });
   document.getElementById('btn-back-to-builder').addEventListener('click', () => {
     if (gameState && !gameState.winner) {
       if (!confirm('Abandonner la partie en cours et retourner au deck builder ?')) return;
     }
+    SFX.play('click');
     showScreen('deckbuilder');
   });
+  document.getElementById('btn-mute-game').addEventListener('click', (e) => toggleMuteButton(e.currentTarget));
+  attachHolographicTilt('#player-hand', '.hand-card');
+}
+
+function toggleMuteButton(btn) {
+  const muted = SFX.toggleMute();
+  const label = muted ? '🔇' : '🔊';
+  document.querySelectorAll('#btn-mute-game, #btn-mute-builder').forEach(b => { b.textContent = label; });
+  if (!muted) SFX.play('click');
+  void btn;
+}
+
+// ---------------------------------------------------------------- fx: snapshot & diff
+
+function captureSnapshot(state) {
+  const snap = { heroHp: {}, cards: {} };
+  for (const pid of ['player', 'ai']) {
+    snap.heroHp[pid] = state.players[pid].heroHp;
+    for (const c of state.players[pid].board) snap.cards[c.uid] = c.currentHp;
+  }
+  return snap;
+}
+
+function captureRects() {
+  const rects = {};
+  document.querySelectorAll('[data-uid]').forEach(el => { rects[el.dataset.uid] = el.getBoundingClientRect(); });
+  return rects;
+}
+
+function heroRect(pid) {
+  return document.getElementById(pid === 'player' ? 'player-hero-target' : 'ai-hero-target').getBoundingClientRect();
+}
+
+function animateDiff(before, after, beforeRects) {
+  for (const pid of ['player', 'ai']) {
+    const delta = after.heroHp[pid] - before.heroHp[pid];
+    if (delta !== 0) {
+      spawnFloatNumber(heroRect(pid), delta);
+      if (delta < 0) { SFX.play('hit'); shakeScreen(4 + Math.min(10, Math.abs(delta))); }
+      else SFX.play('heal');
+    }
+  }
+  const beforeUids = Object.keys(before.cards);
+  const afterUids = new Set(Object.keys(after.cards));
+  for (const uid of beforeUids) {
+    if (!afterUids.has(uid)) {
+      spawnDeathBurst(beforeRects[uid]);
+      SFX.play('death');
+    } else {
+      const delta = after.cards[uid] - before.cards[uid];
+      if (delta !== 0) {
+        const el = document.querySelector(`[data-uid="${uid}"]`);
+        spawnFloatNumber(el ? el.getBoundingClientRect() : beforeRects[uid], delta);
+      }
+    }
+  }
+  for (const uid of Object.keys(after.cards)) {
+    if (!(uid in before.cards)) {
+      const el = document.querySelector(`[data-uid="${uid}"]`);
+      if (el) { el.classList.add('card-enter'); setTimeout(() => el.classList.remove('card-enter'), 420); }
+    }
+  }
+}
+
+function checkSynergyToasts(board) {
+  if (!lastSeenTiers) resetFxState();
+  const tiers = getSynergyTiers(board);
+  for (const d of SYNERGY_DOMAINS) {
+    if (tiers[d] > lastSeenTiers[d]) {
+      showSynergyToast(d, tiers[d]);
+      SFX.play('synergy');
+    }
+    lastSeenTiers[d] = tiers[d];
+  }
 }
 
 function flashError(msg) {
@@ -60,10 +142,21 @@ function canPlayerAct() {
 
 function onHandCardClick(uid) {
   if (!canPlayerAct()) return;
+  const card = gameState.players.player.hand.find(c => c.uid === uid);
+  const isLegendary = card && card.cardId === 'peoplespheres';
+  const before = captureSnapshot(gameState);
+  const beforeRects = captureRects();
   const res = playCard(gameState, 'player', uid);
   selectedAttackerUid = null;
-  if (!res.ok) flashError(res.error);
+  if (!res.ok) {
+    SFX.play('error');
+    flashError(res.error);
+    return;
+  }
+  SFX.play('cardPlay');
   renderGame();
+  animateDiff(before, captureSnapshot(gameState), beforeRects);
+  if (isLegendary) { showBanner('SYNCHRONISATION UNIVERSELLE', { epic: true }); SFX.play('legendary'); spawnConfetti(30); }
   if (gameState.winner) showGameOver();
 }
 
@@ -73,29 +166,45 @@ function onPlayerBoardCardClick(uid) {
   if (!card) return;
   if (selectedAttackerUid === uid) { selectedAttackerUid = null; renderGame(); return; }
   if (card.summoningSick || card.hasAttackedThisTurn) {
+    SFX.play('error');
     flashError(card.summoningSick ? 'Cette carte vient d\'être jouée (pas encore prête).' : 'Cette carte a déjà attaqué ce tour-ci.');
     return;
   }
+  SFX.play('click');
   selectedAttackerUid = uid;
   renderGame();
 }
 
+function performPlayerAttack(targetType, targetUid) {
+  const attackerUid = selectedAttackerUid;
+  const beforeRects = captureRects();
+  const before = captureSnapshot(gameState);
+  const res = attack(gameState, 'player', attackerUid, targetType, targetUid);
+  selectedAttackerUid = null;
+  if (!res.ok) {
+    SFX.play('error');
+    flashError(res.error);
+    renderGame();
+    return;
+  }
+  SFX.play('attack');
+  const fromRect = beforeRects[attackerUid];
+  const toRect = targetType === 'hero' ? heroRect('ai') : beforeRects[targetUid];
+  spawnAttackProjectile(fromRect, toRect, () => {
+    renderGame();
+    animateDiff(before, captureSnapshot(gameState), beforeRects);
+    if (gameState.winner) showGameOver();
+  });
+}
+
 function onEnemyBoardCardClick(uid) {
   if (!canPlayerAct() || !selectedAttackerUid) return;
-  const res = attack(gameState, 'player', selectedAttackerUid, 'card', uid);
-  selectedAttackerUid = null;
-  if (!res.ok) flashError(res.error);
-  renderGame();
-  if (gameState.winner) showGameOver();
+  performPlayerAttack('card', uid);
 }
 
 function onEnemyHeroClick() {
   if (!canPlayerAct() || !selectedAttackerUid) return;
-  const res = attack(gameState, 'player', selectedAttackerUid, 'hero');
-  selectedAttackerUid = null;
-  if (!res.ok) flashError(res.error);
-  renderGame();
-  if (gameState.winner) showGameOver();
+  performPlayerAttack('hero', null);
 }
 
 async function handleEndTurn() {
@@ -104,21 +213,57 @@ async function handleEndTurn() {
   selectedAttackerUid = null;
   endTurn(gameState, 'player');
   renderGame();
+  showBanner(gameState.activePlayer === 'ai' ? "TOUR DE L'IA" : 'VOTRE TOUR');
+  SFX.play('turnStart');
   if (gameState.winner) { showGameOver(); inputLocked = false; return; }
 
-  await sleep(450);
-  runAiTurn(gameState);
-  renderGame();
-  if (gameState.winner) { showGameOver(); inputLocked = false; return; }
+  await sleep(500);
+  await runAiTurnAnimated();
+  if (gameState.winner) { inputLocked = false; return; }
 
-  await sleep(350);
+  await sleep(300);
   endTurn(gameState, 'ai');
   inputLocked = false;
   renderGame();
+  showBanner('VOTRE TOUR');
+  SFX.play('turnStart');
   if (gameState.winner) showGameOver();
 }
 
+async function runAiTurnAnimated() {
+  const iter = runAiTurnSteps(gameState);
+  while (true) {
+    const before = captureSnapshot(gameState);
+    const beforeRects = captureRects();
+    const { value: step, done } = iter.next();
+    if (done) break;
+    if (!step.result || !step.result.ok) continue;
+
+    if (step.type === 'play') {
+      SFX.play(step.card.cardId === 'peoplespheres' ? 'legendary' : 'cardPlay');
+      renderGame();
+      animateDiff(before, captureSnapshot(gameState), beforeRects);
+      if (step.card.cardId === 'peoplespheres') { showBanner('SYNCHRONISATION UNIVERSELLE (IA)', { epic: true }); spawnConfetti(20); }
+    } else if (step.type === 'attack') {
+      SFX.play('attack');
+      const fromRect = beforeRects[step.attacker.uid];
+      const toRect = step.targetType === 'hero' ? heroRect('player') : beforeRects[step.target.uid];
+      await new Promise((resolve) => {
+        spawnAttackProjectile(fromRect, toRect, () => {
+          renderGame();
+          animateDiff(before, captureSnapshot(gameState), beforeRects);
+          resolve();
+        });
+      });
+    }
+    await sleep(500);
+    if (gameState.winner) { showGameOver(); return; }
+  }
+  renderGame();
+}
+
 function resolveChoiceFromUI(selection) {
+  SFX.play('click');
   resolvePendingChoice(gameState, selection);
   renderGame();
   if (gameState.winner) showGameOver();
@@ -168,9 +313,12 @@ function renderGame() {
   document.getElementById('end-turn-btn').classList.toggle('your-turn', canPlayerAct());
 
   renderSynergyPanel(player.board);
+  checkSynergyToasts(player.board);
   renderLog();
   renderModals();
 }
+
+function rarityClass(rarity) { return `rarity-${rarity === 'L' ? 'L' : rarity}`; }
 
 function miniCardHtml(state, ownerId, card, opts) {
   opts = opts || {};
@@ -180,7 +328,7 @@ function miniCardHtml(state, ownerId, card, opts) {
   const kws = keywordsArray(card);
   const provocation = cardHasProvocation(state, ownerId, card);
   const kwLabel = [...kws.filter(k => k !== 'Provocation'), ...(provocation ? ['Provocation'] : [])].join(', ');
-  const classes = ['mini-card'];
+  const classes = ['mini-card', rarityClass(card.rarity)];
   if (opts.sick) classes.push('sick');
   if (opts.selectable) classes.push('selectable');
   if (opts.selected) classes.push('selected');
@@ -188,7 +336,7 @@ function miniCardHtml(state, ownerId, card, opts) {
   return `
     <div class="${classes.join(' ')}" data-uid="${card.uid}" style="--dcolor:${color}" title="${escapeAttr(cardAbilityText(card))}">
       ${card.pointFaible ? '<div class="pf-flag">PF</div>' : ''}
-      <div class="mc-name">${card.name}</div>
+      <div class="mc-name"><span class="domain-icon">${DOMAIN_ICONS[card.domain] || ''}</span>${card.name}</div>
       <div class="mc-kw">${kwLabel}</div>
       <div class="mc-stats">
         <span class="mc-atk">${atk}</span>
@@ -203,7 +351,7 @@ function handCardHtml(state, card) {
     return `
       <div class="hand-card" data-uid="${card.uid}" style="--dcolor:#4fd1c5">
         <div class="hc-cost">0</div>
-        <div class="hc-name">${card.name}</div>
+        <div class="hc-name">⚡ ${card.name}</div>
         <div class="hc-ability">Jeton : gagnez 1 mana ce tour-ci.</div>
       </div>`;
   }
@@ -211,9 +359,9 @@ function handCardHtml(state, card) {
   const affordable = cost <= state.players.player.mana && state.players.player.board.length < MAX_BOARD;
   const color = DOMAIN_COLORS[card.domain] || '#666';
   return `
-    <div class="hand-card ${affordable ? '' : 'unaffordable'}" data-uid="${card.uid}" style="--dcolor:${color}" title="${escapeAttr(cardAbilityText(card))}">
+    <div class="hand-card ${rarityClass(card.rarity)} ${affordable ? '' : 'unaffordable'}" data-uid="${card.uid}" style="--dcolor:${color}" title="${escapeAttr(cardAbilityText(card))}">
       <div class="hc-cost">${cost}</div>
-      <div class="hc-name">${card.name}</div>
+      <div class="hc-name"><span class="domain-icon">${DOMAIN_ICONS[card.domain] || ''}</span>${card.name}</div>
       <div class="hc-ability">${DOMAIN_LABELS[card.domain]} · ${rarityLabel(card.rarity)}${card.pointFaible ? ' · PF' : ''}</div>
       <div class="hc-stats">
         <span class="mc-atk">${card.currentAtk}</span>
@@ -279,8 +427,8 @@ function renderModals() {
 
 function tinyCardHtml(card) {
   const color = DOMAIN_COLORS[card.domain] || '#666';
-  return `<div class="mini-card" data-choice-uid="${card.uid}" style="--dcolor:${color}" title="${escapeAttr(cardAbilityText(card))}">
-    <div class="mc-name">${card.name}</div>
+  return `<div class="mini-card ${rarityClass(card.rarity)}" data-choice-uid="${card.uid}" style="--dcolor:${color}" title="${escapeAttr(cardAbilityText(card))}">
+    <div class="mc-name"><span class="domain-icon">${DOMAIN_ICONS[card.domain] || ''}</span>${card.name}</div>
     <div class="mc-kw">${DOMAIN_LABELS[card.domain] || ''}</div>
     <div class="mc-stats"><span class="mc-atk">${card.baseAtk ?? card.atk}</span><span class="mc-def">${card.baseDef ?? card.def}</span><span class="mc-hp">${card.baseHp ?? card.hp}</span></div>
   </div>`;
@@ -377,6 +525,9 @@ function showGameOver() {
   const root = document.getElementById('modal-root');
   const won = gameState.winner === 'player';
   const draw = gameState.winner === 'draw';
+  SFX.play(won ? 'win' : draw ? 'turnStart' : 'lose');
+  if (won) spawnConfetti(90);
+  else if (!draw) shakeScreen(10, 400);
   root.innerHTML = `
     <div class="modal-overlay">
       <div class="modal-box gameover-box">

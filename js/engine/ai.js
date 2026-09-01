@@ -34,12 +34,17 @@ function aiPickFromReveal(revealed) {
   return revealed.reduce((best, c) => (score(c) < score(best) ? c : best), revealed[0]);
 }
 
-function runAiTurn(state) {
-  playAiCards(state);
-  if (!state.winner) runAiAttacks(state);
+// Generator versions yield a small descriptor right after each individual engine
+// mutation (one card played, one attack resolved) so the UI can pause between
+// steps and animate them one at a time instead of resolving the whole AI turn
+// in a single instant, silent jump.
+
+function* runAiTurnSteps(state) {
+  yield* playAiCardsSteps(state);
+  if (!state.winner) yield* runAiAttacksSteps(state);
 }
 
-function playAiCards(state) {
+function* playAiCardsSteps(state) {
   const p = state.players.ai;
   let guard = 0;
   let playedSomething = true;
@@ -57,30 +62,38 @@ function playAiCards(state) {
         computeCost(state, 'ai', c, { consume: false }) > p.mana &&
         computeCost(state, 'ai', c, { consume: false }) <= afterMana);
       if (unlocksMore) {
-        playCard(state, 'ai', token.uid);
+        const result = playCard(state, 'ai', token.uid);
         playedSomething = true;
+        yield { type: 'play', card: token, result };
         continue;
       }
     }
 
     if (p.board.length >= MAX_BOARD) {
-      if (token) { playCard(state, 'ai', token.uid); playedSomething = true; }
+      if (token) {
+        const result = playCard(state, 'ai', token.uid);
+        playedSomething = true;
+        yield { type: 'play', card: token, result };
+      }
       break;
     }
 
     const nonToken = playable.filter(c => !c.isToken)
       .sort((a, b) => computeCost(state, 'ai', b, { consume: false }) - computeCost(state, 'ai', a, { consume: false }));
     if (nonToken.length > 0) {
-      playCard(state, 'ai', nonToken[0].uid);
+      const card = nonToken[0];
+      const result = playCard(state, 'ai', card.uid);
       playedSomething = true;
+      yield { type: 'play', card, result };
     } else if (token) {
-      playCard(state, 'ai', token.uid);
+      const result = playCard(state, 'ai', token.uid);
       playedSomething = true;
+      yield { type: 'play', card: token, result };
     }
   }
 }
 
-function runAiAttacks(state) {
+function* runAiAttacksSteps(state) {
   const p = state.players.ai;
   const opp = state.players.player;
 
@@ -92,7 +105,8 @@ function runAiAttacks(state) {
     if (totalAtk >= opp.heroHp) {
       for (const a of attackersNow()) {
         if (state.winner) break;
-        attack(state, 'ai', a.uid, 'hero');
+        const result = attack(state, 'ai', a.uid, 'hero');
+        yield { type: 'attack', attacker: a, targetType: 'hero', result };
       }
       return;
     }
@@ -105,18 +119,27 @@ function runAiAttacks(state) {
     const provs = getProvocationCards(state, 'player');
     if (provs.length > 0) {
       const target = aiPickAttackTarget(state, a, provs);
-      attack(state, 'ai', a.uid, 'card', target.uid);
+      const result = attack(state, 'ai', a.uid, 'card', target.uid);
+      yield { type: 'attack', attacker: a, targetType: 'card', target, result };
       continue;
     }
 
     const best = aiBestTrade(state, a, opp.board);
     if (best && best.score >= 5) {
-      attack(state, 'ai', a.uid, 'card', best.card.uid);
+      const result = attack(state, 'ai', a.uid, 'card', best.card.uid);
+      yield { type: 'attack', attacker: a, targetType: 'card', target: best.card, result };
     } else {
-      attack(state, 'ai', a.uid, 'hero');
+      const result = attack(state, 'ai', a.uid, 'hero');
+      yield { type: 'attack', attacker: a, targetType: 'hero', result };
     }
   }
 }
+
+// Synchronous wrappers — used by the headless simulation and anywhere the
+// whole AI turn should just resolve instantly with no step-by-step pacing.
+function runAiTurn(state) { for (const _ of runAiTurnSteps(state)) { void _; } }
+function playAiCards(state) { for (const _ of playAiCardsSteps(state)) { void _; } }
+function runAiAttacks(state) { for (const _ of runAiAttacksSteps(state)) { void _; } }
 
 function aiPickAttackTarget(state, attacker, provocateurs) {
   let best = provocateurs[0];

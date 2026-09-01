@@ -48,11 +48,13 @@ function initDeckBuilder() {
     removeCardFromDeck(row.dataset.id);
   });
   document.getElementById('btn-clear-deck').addEventListener('click', () => {
+    SFX.play('click');
     builderState.counts = {};
     renderPool();
     renderDeckPanel();
   });
   document.getElementById('btn-random-deck').addEventListener('click', () => {
+    SFX.play('click');
     builderState.counts = {};
     for (const id of buildAiDeck()) {
       builderState.counts[id] = (builderState.counts[id] || 0) + 1;
@@ -63,9 +65,12 @@ function initDeckBuilder() {
   document.getElementById('btn-start-game').addEventListener('click', () => {
     const list = deckListFromCounts();
     const errors = validateDeck(list);
-    if (errors.length) { alert(errors.join('\n')); return; }
+    if (errors.length) { SFX.play('error'); alert(errors.join('\n')); return; }
+    SFX.play('cardPlay');
     startNewGame(list);
   });
+  document.getElementById('btn-mute-builder').addEventListener('click', (e) => toggleMuteButton(e.currentTarget));
+  attachHolographicTilt('#pool-grid', '.card-tile');
 }
 
 function renderDomainTabs() {
@@ -75,6 +80,7 @@ function renderDomainTabs() {
   ).join('');
   el.querySelectorAll('button').forEach(btn => {
     btn.addEventListener('click', () => {
+      SFX.play('tabSwitch');
       builderState.filter = btn.dataset.filter;
       renderDomainTabs();
       renderPool();
@@ -100,10 +106,10 @@ function cardTileHtml(card) {
   const maxed = count >= max || totalDeckSize() >= DECK_MAX;
   const color = DOMAIN_COLORS[card.domain] || '#666';
   return `
-    <div class="card-tile ${maxed ? 'maxed' : ''}" data-id="${card.id}" style="--dcolor:${color}">
+    <div class="card-tile ${rarityClass(card.rarity)} ${maxed ? 'maxed' : ''}" data-id="${card.id}" style="--dcolor:${color}">
       <div class="cost-badge">${card.cost}</div>
       ${count > 0 ? `<div class="count-badge">×${count}</div>` : ''}
-      <div class="name">${card.name}</div>
+      <div class="name"><span class="domain-icon">${DOMAIN_ICONS[card.domain] || ''}</span>${card.name}</div>
       <div class="stars">${rarityLabel(card.rarity)} · ${DOMAIN_LABELS[card.domain]}</div>
       <div class="statline"><span>${card.atk} ATK</span><span>${card.def} DEF</span><span>${card.hp} HP</span></div>
       <div class="ability">${cardAbilityText(card)}</div>
@@ -149,8 +155,8 @@ function addCardToDeck(cardId) {
   const card = CARDS_BY_ID[cardId];
   if (!card) return;
   const count = builderState.counts[cardId] || 0;
-  if (count >= maxCopiesFor(card)) return;
-  if (totalDeckSize() >= DECK_MAX) return;
+  if (count >= maxCopiesFor(card) || totalDeckSize() >= DECK_MAX) { SFX.play('error'); return; }
+  SFX.play('cardAdd');
   builderState.counts[cardId] = count + 1;
   renderPool();
   renderDeckPanel();
@@ -158,6 +164,7 @@ function addCardToDeck(cardId) {
 
 function removeCardFromDeck(cardId) {
   const count = builderState.counts[cardId] || 0;
+  SFX.play('cardRemove');
   if (count <= 1) delete builderState.counts[cardId];
   else builderState.counts[cardId] = count - 1;
   renderPool();

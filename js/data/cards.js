@@ -31,6 +31,16 @@ const DOMAIN_COLORS = {
   [DOMAIN.TRANSVERSAL]: '#1c1c28',
 };
 
+const DOMAIN_ICONS = {
+  [DOMAIN.PAIE_GA]: '💰',
+  [DOMAIN.GTA]: '🛡️',
+  [DOMAIN.RECRUTEMENT]: '🎯',
+  [DOMAIN.FORMATION]: '🎓',
+  [DOMAIN.TALENT_PERF]: '⚡',
+  [DOMAIN.PILOTAGE_BI]: '📊',
+  [DOMAIN.TRANSVERSAL]: '🌐',
+};
+
 // rarity: 1 = ★, 2 = ★★, 3 = ★★★, 'L' = Légendaire (∞)
 
 const CARD_POOL = [

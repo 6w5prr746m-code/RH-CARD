@@ -15,6 +15,7 @@
       <div class="sub">Sélectionnez 25 à 30 cartes parmi les 91 éditeurs du marché SIRH.</div>
     </div>
     <div style="display:flex; gap:8px;">
+      <button id="btn-mute-builder" class="icon-btn" title="Activer/couper le son">🔊</button>
       <button id="btn-random-deck">Deck aléatoire</button>
       <button id="btn-clear-deck">Vider</button>
     </div>
@@ -39,7 +40,10 @@
   <div class="game-body">
     <div class="top-bar">
       <div class="turn-indicator" id="turn-indicator">Tour 1</div>
-      <button id="btn-back-to-builder">← Deck builder</button>
+      <div style="display:flex; gap:8px;">
+        <button id="btn-mute-game" class="icon-btn" title="Activer/couper le son">🔊</button>
+        <button id="btn-back-to-builder">← Deck builder</button>
+      </div>
     </div>
     <div class="hero-row opponent">
       <div class="hero-info">
@@ -75,10 +79,13 @@
 </section>
 
 <div id="modal-root"></div>
-<div id="toast" class="hidden" style="position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:#2c3145; color:#e8e9f0; padding:10px 18px; border-radius:8px; border:1px solid #e0556f; z-index:100; font-size:13px;"></div>
+<div id="fx-root"></div>
+<div id="toast" class="hidden" style="position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:#2c3145; color:#e8e9f0; padding:10px 18px; border-radius:8px; border:1px solid #e0556f; z-index:210; font-size:13px;"></div>
 
 <script src="js/data/cards.js"></script>
 <script src="js/data/describe.js"></script>
+<script src="js/fx/sfx.js"></script>
+<script src="js/fx/vfx.js"></script>
 <script src="js/engine/synergy.js"></script>
 <script src="js/engine/engine.js"></script>
 <script src="js/engine/ai.js"></script>

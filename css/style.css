@@ -208,12 +208,12 @@ button.danger { border-color: var(--danger); color: var(--danger); }
   padding: 8px;
   font-size: 11px;
   cursor: pointer;
-  transition: transform 0.1s ease;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
   position: relative;
 }
-.hand-card:hover { transform: translateY(-10px); border-color: var(--accent); }
+.hand-card:hover { border-color: var(--accent); box-shadow: 0 10px 24px rgba(0,0,0,0.4); }
 .hand-card.unaffordable { opacity: 0.45; cursor: not-allowed; }
-.hand-card.unaffordable:hover { transform: none; }
+.hand-card.unaffordable:hover { transform: none !important; box-shadow: none; }
 .hand-card.selected { transform: translateY(-14px); border-color: var(--accent-2); box-shadow: 0 0 12px rgba(255,180,84,0.6); }
 .hand-card .hc-name { font-weight: 700; font-size: 12px; min-height: 32px; }
 .hand-card .hc-cost {
@@ -274,5 +274,201 @@ button.danger { border-color: var(--danger); color: var(--danger); }
 .gameover-box h1 { font-size: 32px; margin: 0 0 8px; }
 .gameover-box h1.win { color: var(--good); }
 .gameover-box h1.lose { color: var(--danger); }
+
+/* ---------------------------------------------------------- Card redesign */
+
+@property --holo-angle {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+
+.domain-icon { font-size: 13px; margin-right: 2px; }
+
+/* Rarity 1 (★) stays the plain flat frame already defined above. */
+
+.rarity-2 {
+  box-shadow: inset 0 0 14px rgba(255, 255, 255, 0.05);
+}
+
+.rarity-3 {
+  border-color: #7a5320;
+  background: linear-gradient(160deg, var(--bg-panel) 55%, rgba(255, 180, 84, 0.10));
+  position: relative;
+  overflow: hidden;
+}
+.rarity-3::before {
+  content: '';
+  position: absolute;
+  top: 0; left: -60%;
+  width: 40%; height: 100%;
+  background: linear-gradient(100deg, transparent, rgba(255, 210, 140, 0.35), transparent);
+  animation: shimmerSweep 3.2s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes shimmerSweep {
+  0% { left: -60%; }
+  50% { left: 130%; }
+  100% { left: 130%; }
+}
+
+.rarity-L {
+  border: 2px solid transparent !important;
+  background-image: linear-gradient(var(--bg-panel), var(--bg-panel)),
+    conic-gradient(from var(--holo-angle, 0deg), #ff5f6d, #ffc371, #4fd1c5, #7d3bd1, #ff5f6d);
+  background-origin: border-box;
+  background-clip: padding-box, border-box;
+  animation: holoSpin 5s linear infinite;
+  position: relative;
+  overflow: hidden;
+}
+@keyframes holoSpin { to { --holo-angle: 360deg; } }
+.rarity-L::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: radial-gradient(circle at var(--mx, 50%) var(--my, 30%), rgba(255,255,255,0.28), transparent 55%);
+  pointer-events: none;
+}
+.rarity-L .name, .rarity-L .hc-name, .rarity-L .mc-name {
+  background: linear-gradient(90deg, #ff5f6d, #ffc371, #4fd1c5, #7d3bd1);
+  background-size: 300% auto;
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  animation: holoText 3s linear infinite;
+}
+@keyframes holoText { to { background-position: 300% center; } }
+
+.hand-card { position: relative; overflow: hidden; transform: translateY(0); }
+.hand-card::after {
+  content: '';
+  position: absolute; inset: 0; pointer-events: none; border-radius: 8px;
+  background: radial-gradient(circle at var(--mx, 50%) var(--my, 50%), rgba(255,255,255,0.35), transparent 45%);
+  opacity: 0; transition: opacity 0.15s ease;
+}
+.hand-card:hover::after { opacity: 1; }
+.hand-card.unaffordable:hover::after { opacity: 0; }
+
+.hand-card.card-enter, .mini-card.card-enter {
+  animation: cardEnter 0.4s cubic-bezier(0.2, 0.8, 0.3, 1.1);
+}
+@keyframes cardEnter {
+  0% { transform: scale(0.4) rotate(-8deg); opacity: 0; }
+  60% { transform: scale(1.08) rotate(2deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0); opacity: 1; }
+}
+
+/* ---------------------------------------------------------- Mute button */
+
+.icon-btn { font-size: 16px; padding: 6px 10px; line-height: 1; }
+
+/* ---------------------------------------------------------- Screen shake */
+
+#screen-game.screen-shake {
+  animation: screenShake var(--shake-dur, 300ms) both;
+}
+@keyframes screenShake {
+  10%, 90% { transform: translate(calc(-1px * var(--shake-mag, 1)), 0); }
+  20%, 80% { transform: translate(calc(2px * var(--shake-mag, 1)), calc(-1px * var(--shake-mag, 1))); }
+  30%, 50%, 70% { transform: translate(calc(-3px * var(--shake-mag, 1)), calc(2px * var(--shake-mag, 1))); }
+  40%, 60% { transform: translate(calc(3px * var(--shake-mag, 1)), calc(1px * var(--shake-mag, 1))); }
+}
+
+/* ---------------------------------------------------------- FX layer */
+
+#fx-root {
+  position: fixed; inset: 0; pointer-events: none; z-index: 200; overflow: hidden;
+}
+
+.fx-floatnum {
+  position: fixed; transform: translate(-50%, -50%);
+  font-weight: 800; font-size: 22px; text-shadow: 0 2px 6px rgba(0,0,0,0.6);
+  animation: floatUp 0.9s ease-out forwards;
+}
+.fx-floatnum.fx-dmg { color: var(--danger); }
+.fx-floatnum.fx-heal { color: var(--good); }
+@keyframes floatUp {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.6); }
+  15% { opacity: 1; transform: translate(-50%, -60%) scale(1.25); }
+  100% { opacity: 0; transform: translate(-50%, -130%) scale(1); }
+}
+
+.fx-impact {
+  position: fixed; width: 10px; height: 10px; border-radius: 50%;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(circle, #fff, var(--accent-2) 60%, transparent 70%);
+  box-shadow: 0 0 20px 10px rgba(255, 180, 84, 0.5);
+  animation: impactPop 0.35s ease-out forwards;
+}
+@keyframes impactPop {
+  0% { transform: translate(-50%, -50%) scale(0.3); opacity: 1; }
+  100% { transform: translate(-50%, -50%) scale(4.5); opacity: 0; }
+}
+
+.fx-projectile {
+  position: fixed; width: 12px; height: 12px; border-radius: 50%;
+  background: radial-gradient(circle, #fff, var(--accent) 60%, transparent 75%);
+  box-shadow: 0 0 14px 5px rgba(79, 209, 197, 0.7);
+  transform: translate(-50%, -50%);
+  animation: fxFly 0.22s ease-in forwards;
+}
+@keyframes fxFly {
+  to { transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))); }
+}
+
+.fx-deathburst { position: fixed; width: 0; height: 0; }
+.fx-shard {
+  position: absolute; width: 6px; height: 6px; background: var(--danger); border-radius: 1px;
+  animation: shardFly 0.6s ease-out forwards;
+}
+@keyframes shardFly {
+  0% { transform: translate(0, 0) rotate(0); opacity: 1; }
+  100% { transform: translate(var(--dx), var(--dy)) rotate(220deg); opacity: 0; }
+}
+
+.fx-confetti {
+  position: fixed; top: -20px; width: 9px; height: 14px; opacity: 0.95;
+  animation: confettiFall linear forwards;
+}
+@keyframes confettiFall {
+  0% { transform: translateY(0) rotate(0); opacity: 1; }
+  100% { transform: translateY(105vh) rotate(var(--rot)); opacity: 0.4; }
+}
+
+.fx-banner {
+  position: fixed; top: 38%; left: 50%; transform: translate(-50%, -50%) scale(0.7);
+  font-size: 28px; font-weight: 800; letter-spacing: 1px; text-align: center;
+  color: var(--text); background: rgba(10, 12, 20, 0.85);
+  border: 2px solid var(--accent); border-radius: 12px; padding: 14px 34px;
+  box-shadow: 0 0 30px rgba(79, 209, 197, 0.5);
+  animation: bannerPop 1.4s cubic-bezier(0.2, 0.9, 0.3, 1) forwards;
+  white-space: nowrap;
+}
+.fx-banner-epic {
+  border-color: transparent;
+  background-image: linear-gradient(rgba(10,12,20,0.9), rgba(10,12,20,0.9)),
+    conic-gradient(from 0deg, #ff5f6d, #ffc371, #4fd1c5, #7d3bd1, #ff5f6d);
+  background-origin: border-box; background-clip: padding-box, border-box;
+  font-size: 34px;
+  box-shadow: 0 0 50px rgba(255, 180, 84, 0.6);
+}
+@keyframes bannerPop {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+  15% { opacity: 1; transform: translate(-50%, -50%) scale(1.08); }
+  25% { transform: translate(-50%, -50%) scale(1); }
+  85% { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(1.05); }
+}
+
+.fx-toast {
+  position: fixed; top: 76px; right: 272px; max-width: 240px;
+  background: var(--bg-panel); border-left: 4px solid var(--dcolor, var(--accent));
+  border-radius: 8px; padding: 10px 14px; font-size: 12.5px;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.5);
+  animation: toastIn 0.3s ease-out;
+  transition: top 0.2s ease;
+}
+.fx-toast-icon { font-size: 14px; margin-right: 4px; }
+.fx-toast-out { animation: toastOut 0.4s ease-in forwards; }
+@keyframes toastIn { from { opacity: 0; transform: translateX(40px); } to { opacity: 1; transform: translateX(0); } }
+@keyframes toastOut { to { opacity: 0; transform: translateX(40px); } }
 
 .hidden { display: none !important; }

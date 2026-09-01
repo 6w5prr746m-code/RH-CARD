@@ -13,12 +13,23 @@ function startNewGame(playerDeckList) {
   gameState = createGameState(playerDeckList, aiDeckList);
   selectedAttackerUid = null;
   inputLocked = false;
+  resetFxState();
   showScreen('game');
   renderGame();
+  showBanner('VOTRE TOUR');
+  SFX.play('turnStart');
 }
 
 document.addEventListener('DOMContentLoaded', () => {
   initDeckBuilder();
   initBoardUI();
   showScreen('deckbuilder');
+
+  const muteLabel = SFX.isMuted() ? '🔇' : '🔊';
+  document.querySelectorAll('#btn-mute-game, #btn-mute-builder').forEach(b => { b.textContent = muteLabel; });
+
+  document.addEventListener('click', function unlockAudioOnce() {
+    SFX.unlock();
+    document.removeEventListener('click', unlockAudioOnce);
+  }, { once: true });
 });
