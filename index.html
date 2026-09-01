@@ -41,6 +41,12 @@
         <div class="curve" id="deck-curve"></div>
       </div>
       <div class="deck-list" id="deck-list"></div>
+      <div style="display:flex; gap:6px; padding:8px 16px; border-top:1px solid var(--border);">
+        <select id="saved-decks-select" style="flex:1; min-width:0;"><option value="">— Mes decks —</option></select>
+        <button id="btn-load-deck" class="icon-btn" title="Charger le deck sélectionné">📂</button>
+        <button id="btn-save-deck" class="icon-btn" title="Sauvegarder le deck actuel">💾</button>
+        <button id="btn-delete-deck" class="icon-btn" title="Supprimer le deck sélectionné">🗑</button>
+      </div>
       <footer>
         <button id="btn-start-game" class="primary" disabled>Lancer la partie</button>
       </footer>
@@ -113,6 +119,7 @@
 <script src="js/data/cards.js"></script>
 <script src="js/data/describe.js"></script>
 <script src="js/data/collection.js"></script>
+<script src="js/data/decks-storage.js"></script>
 <script src="js/fx/sfx.js"></script>
 <script src="js/fx/vfx.js"></script>
 <script src="js/engine/synergy.js"></script>

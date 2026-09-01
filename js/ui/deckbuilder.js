@@ -69,8 +69,52 @@ function initDeckBuilder() {
   document.getElementById('btn-start-game').addEventListener('click', handleStartGameClick);
   document.getElementById('btn-mute-builder').addEventListener('click', (e) => toggleMuteButton(e.currentTarget));
   document.getElementById('btn-open-booster').addEventListener('click', handleOpenBooster);
+
+  document.getElementById('btn-save-deck').addEventListener('click', () => {
+    const list = deckListFromCounts();
+    if (list.length === 0) { SFX.play('error'); flashError('Le deck est vide.'); return; }
+    const name = (prompt('Nom du deck à sauvegarder :', '') || '').trim();
+    if (!name) return;
+    saveCurrentDeckAs(name, list);
+    SFX.play('cardAdd');
+    renderSavedDecksSelect();
+    document.getElementById('saved-decks-select').value = name;
+  });
+  document.getElementById('btn-load-deck').addEventListener('click', () => {
+    const name = document.getElementById('saved-decks-select').value;
+    if (!name) return;
+    const list = loadDeckByName(name);
+    if (!list) return;
+    builderState.counts = {};
+    for (const id of list) {
+      if (!CARDS_BY_ID[id]) continue;
+      builderState.counts[id] = (builderState.counts[id] || 0) + 1;
+    }
+    SFX.play('cardPlay');
+    renderPool();
+    renderDeckPanel();
+  });
+  document.getElementById('btn-delete-deck').addEventListener('click', () => {
+    const name = document.getElementById('saved-decks-select').value;
+    if (!name) return;
+    if (!confirm(`Supprimer le deck « ${name} » ?`)) return;
+    deleteSavedDeck(name);
+    SFX.play('cardRemove');
+    renderSavedDecksSelect();
+  });
+
   attachHolographicTilt('#pool-grid', '.card-tile');
   renderBoosterCount();
+  renderSavedDecksSelect();
+}
+
+function renderSavedDecksSelect() {
+  const decks = loadSavedDecks();
+  const sel = document.getElementById('saved-decks-select');
+  const current = sel.value;
+  sel.innerHTML = '<option value="">— Mes decks —</option>' +
+    Object.entries(decks).map(([name, list]) => `<option value="${escapeAttr(name)}">${escapeAttr(name)} (${list.length})</option>`).join('');
+  if (decks[current]) sel.value = current;
 }
 
 function renderBoosterCount() {

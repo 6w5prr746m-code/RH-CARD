@@ -45,6 +45,34 @@ function findCardAnywhere(state, uid) {
   return null;
 }
 
+// ---------------------------------------------------------------- autosave
+
+const SAVED_GAME_KEY = 'rhcard_active_game';
+
+function setReplacer(key, value) { return value instanceof Set ? { __set: Array.from(value) } : value; }
+function setReviver(key, value) { return (value && typeof value === 'object' && Array.isArray(value.__set)) ? new Set(value.__set) : value; }
+
+function saveGameState() {
+  // Skip mid-effect-resolution states: pendingJob/pendingChoice can share the
+  // same object by reference, which JSON round-tripping would silently split
+  // into two independent copies and desync on reload.
+  if (!gameState || gameState.pendingJob || gameState.pendingChoice) return;
+  try { localStorage.setItem(SAVED_GAME_KEY, JSON.stringify(gameState, setReplacer)); } catch (e) { /* storage unavailable */ }
+}
+
+function loadSavedGameState() {
+  try {
+    const raw = localStorage.getItem(SAVED_GAME_KEY);
+    return raw ? JSON.parse(raw, setReviver) : null;
+  } catch (e) {
+    return null;
+  }
+}
+
+function clearSavedGameState() {
+  try { localStorage.removeItem(SAVED_GAME_KEY); } catch (e) { /* storage unavailable */ }
+}
+
 let lastSeenTiers = null; // per-seat: { player: {domain: tier}, ai: {domain: tier} }
 
 function resetFxState() {
@@ -70,6 +98,7 @@ function initBoardUI() {
   document.getElementById('btn-back-to-builder').addEventListener('click', () => {
     if (gameState && !gameState.winner) {
       if (!confirm('Abandonner la partie en cours et retourner au deck builder ?')) return;
+      clearSavedGameState();
     }
     SFX.play('click');
     showScreen('deckbuilder');
@@ -403,6 +432,7 @@ function renderGame() {
   checkSynergyToasts(bottomSeat, bottom.board);
   renderLog();
   renderModals();
+  saveGameState();
 }
 
 function rarityClass(rarity) { return `rarity-${rarity === 'L' ? 'L' : rarity}`; }
@@ -699,6 +729,7 @@ function statsSummaryHtml(playerId) {
 }
 
 function showGameOver() {
+  clearSavedGameState();
   const root = document.getElementById('modal-root');
   const local = gameState.mode === 'local2p';
   const draw = gameState.winner === 'draw';

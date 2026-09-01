@@ -68,6 +68,7 @@ function handleStartGameClick() {
 }
 
 function startNewGame(playerDeckList) {
+  clearSavedGameState();
   lastPlayerDeckList = playerDeckList.slice();
   lastLocalDecks = null;
   setAiDifficulty(document.getElementById('ai-difficulty-select').value);
@@ -84,6 +85,7 @@ function startNewGame(playerDeckList) {
 }
 
 function startLocalGame(p1DeckList, p2DeckList) {
+  clearSavedGameState();
   lastLocalDecks = [p1DeckList.slice(), p2DeckList.slice()];
   lastPlayerDeckList = null;
   gameState = createGameState(p1DeckList, p2DeckList);
@@ -96,10 +98,41 @@ function startLocalGame(p1DeckList, p2DeckList) {
   startMulliganPhase();
 }
 
+function offerResumeIfAny() {
+  const saved = loadSavedGameState();
+  if (!saved || saved.winner) { if (saved && saved.winner) clearSavedGameState(); return; }
+  const root = document.getElementById('modal-root');
+  root.innerHTML = `
+    <div class="modal-overlay">
+      <div class="modal-box" style="text-align:center;">
+        <h2>Partie en cours détectée</h2>
+        <p style="color:var(--text-dim);">Tour ${saved.turnNumber}${saved.mode === 'local2p' ? ' — Duel local' : ' — vs IA'}. Voulez-vous reprendre où vous en étiez ?</p>
+        <div class="modal-actions" style="justify-content:center;">
+          <button id="resume-game" class="primary">Reprendre la partie</button>
+          <button id="discard-saved-game">Nouvelle partie</button>
+        </div>
+      </div>
+    </div>`;
+  document.getElementById('resume-game').addEventListener('click', () => {
+    gameState = saved;
+    selectedAttackerUid = null;
+    inputLocked = false;
+    resetFxState();
+    document.getElementById('modal-root').innerHTML = '';
+    showScreen('game');
+    renderGame();
+  });
+  document.getElementById('discard-saved-game').addEventListener('click', () => {
+    clearSavedGameState();
+    document.getElementById('modal-root').innerHTML = '';
+  });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   initDeckBuilder();
   initBoardUI();
   showScreen('deckbuilder');
+  offerResumeIfAny();
 
   document.getElementById('mode-vsai').addEventListener('click', () => { SFX.play('tabSwitch'); setAppMode('vsAI'); });
   document.getElementById('mode-local2p').addEventListener('click', () => { SFX.play('tabSwitch'); setAppMode('local2p'); });
