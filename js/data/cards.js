@@ -43,7 +43,7 @@ const DOMAIN_ICONS = {
 
 // rarity: 1 = ★, 2 = ★★, 3 = ★★★, 'L' = Légendaire (∞)
 
-const CARD_POOL = [
+const MINION_CARDS = [
   // ---------------------------------------------------------------- PAIE/GA
   { id: 'adp', name: 'ADP', domain: DOMAIN.PAIE_GA, rarity: 3, cost: 8, atk: 3, def: 5, hp: 8,
     keywords: [], onPlay: [{ type: 'heroHeal', amount: 4, target: 'self' }],
@@ -237,6 +237,25 @@ const CARD_POOL = [
   { id: 'oracle-hyperion', name: 'Oracle Hyperion', domain: DOMAIN.PILOTAGE_BI, rarity: 1, cost: 1, atk: 1, def: 1, hp: 4,
     keywords: [] },
 ];
+
+// Action cards — one-shot, non-creature effects. Discarded immediately after
+// resolving; they never occupy a board slot and have no ATK/DEF/HP.
+const ACTION_CARDS = [
+  { id: 'audit-paie-express', name: 'Audit Paie Express', cardType: 'ACTION', domain: DOMAIN.PAIE_GA, rarity: 1, cost: 2,
+    keywords: [], onPlay: [{ type: 'heroHeal', amount: 3, target: 'self' }, { type: 'tutorDomain', amount: 1, domain: 'self' }] },
+  { id: 'alerte-absenteisme', name: 'Alerte Absentéisme', cardType: 'ACTION', domain: DOMAIN.GTA, rarity: 1, cost: 2,
+    keywords: [], onPlay: [{ type: 'buffAllDomain', def: 2, domain: 'self', duration: 'turn' }] },
+  { id: 'campagne-de-sourcing', name: 'Campagne de Sourcing', cardType: 'ACTION', domain: DOMAIN.RECRUTEMENT, rarity: 2, cost: 3,
+    keywords: [], onPlay: [{ type: 'draw', amount: 2 }] },
+  { id: 'session-de-coaching', name: 'Session de Coaching', cardType: 'ACTION', domain: DOMAIN.FORMATION, rarity: 2, cost: 3,
+    keywords: [], onPlay: [{ type: 'buffTarget', atk: 2, hp: 2, target: 'chosenAlly' }] },
+  { id: 'prime-de-performance', name: 'Prime de Performance', cardType: 'ACTION', domain: DOMAIN.TALENT_PERF, rarity: 3, cost: 6,
+    keywords: [], onPlay: [{ type: 'buffAllDomain', atk: 3, domain: 'self' }] },
+  { id: 'reporting-flash', name: 'Reporting Flash', cardType: 'ACTION', domain: DOMAIN.PILOTAGE_BI, rarity: 1, cost: 1,
+    keywords: [], onPlay: [{ type: 'drawKeepBest', amount: 2, keep: 1 }] },
+];
+
+const CARD_POOL = MINION_CARDS.concat(ACTION_CARDS);
 
 // The unique legendary card — transcends all 6 domains.
 const LEGENDARY_CARD = {

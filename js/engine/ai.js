@@ -1,16 +1,35 @@
 // Heuristic AI opponent — greedy mana usage, favorable trades, lethal detection.
+// Behavior is tuned by AI_DIFFICULTY (see setAiDifficulty), which is read by the
+// deck builder and the play/attack step generators below.
 
-function buildAiDeck() {
-  const domains = shuffle(SYNERGY_DOMAINS).slice(0, 3);
-  const deckList = ['peoplespheres'];
+const AI_DIFFICULTY_SETTINGS = {
+  easy: { domainsCount: 2, includeRarity3: false, includeLegendary: false, skipPlayChance: 0.3, faceOverTradeChance: 0.45, tradeThreshold: 5 },
+  normal: { domainsCount: 3, includeRarity3: true, includeLegendary: true, skipPlayChance: 0, faceOverTradeChance: 0, tradeThreshold: 5 },
+  hard: { domainsCount: 3, includeRarity3: true, includeLegendary: true, skipPlayChance: 0, faceOverTradeChance: 0, tradeThreshold: 2 },
+};
+
+let AI_DIFFICULTY = 'normal';
+function setAiDifficulty(level) {
+  AI_DIFFICULTY = AI_DIFFICULTY_SETTINGS[level] ? level : 'normal';
+}
+function getAiDifficultySettings() {
+  return AI_DIFFICULTY_SETTINGS[AI_DIFFICULTY] || AI_DIFFICULTY_SETTINGS.normal;
+}
+
+function buildAiDeck(difficulty) {
+  const settings = AI_DIFFICULTY_SETTINGS[difficulty] || getAiDifficultySettings();
+  const domains = shuffle(SYNERGY_DOMAINS).slice(0, settings.domainsCount);
+  const deckList = settings.includeLegendary ? ['peoplespheres'] : [];
   for (const d of domains) {
     const pool = CARD_POOL.filter(c => c.domain === d);
     const ones = shuffle(pool.filter(c => c.rarity === 1)).slice(0, 2);
     const twos = shuffle(pool.filter(c => c.rarity === 2)).slice(0, 2);
-    const threes = shuffle(pool.filter(c => c.rarity === 3)).slice(0, 1);
     for (const c of ones) deckList.push(c.id, c.id);
     for (const c of twos) deckList.push(c.id, c.id);
-    for (const c of threes) deckList.push(c.id);
+    if (settings.includeRarity3) {
+      const threes = shuffle(pool.filter(c => c.rarity === 3)).slice(0, 1);
+      for (const c of threes) deckList.push(c.id);
+    }
   }
   let guard = 0;
   while (deckList.length < 30 && guard < 500) {
@@ -46,6 +65,7 @@ function* runAiTurnSteps(state) {
 
 function* playAiCardsSteps(state) {
   const p = state.players.ai;
+  const settings = getAiDifficultySettings();
   let guard = 0;
   let playedSomething = true;
   while (playedSomething && !state.winner && guard < 20) {
@@ -54,6 +74,7 @@ function* playAiCardsSteps(state) {
     const affordable = c => c.isToken || computeCost(state, 'ai', c, { consume: false }) <= p.mana;
     const playable = p.hand.filter(affordable);
     if (playable.length === 0) break;
+    if (settings.skipPlayChance > 0 && Math.random() < settings.skipPlayChance) break;
 
     const token = playable.find(c => c.isToken);
     if (token) {
@@ -70,6 +91,14 @@ function* playAiCardsSteps(state) {
     }
 
     if (p.board.length >= MAX_BOARD) {
+      // No creature slot left, but Action cards don't need one.
+      const action = playable.find(c => !c.isToken && c.cardType === 'ACTION');
+      if (action) {
+        const result = playCard(state, 'ai', action.uid);
+        playedSomething = true;
+        yield { type: 'play', card: action, result };
+        continue;
+      }
       if (token) {
         const result = playCard(state, 'ai', token.uid);
         playedSomething = true;
@@ -96,6 +125,7 @@ function* playAiCardsSteps(state) {
 function* runAiAttacksSteps(state) {
   const p = state.players.ai;
   const opp = state.players.player;
+  const settings = getAiDifficultySettings();
 
   const attackersNow = () => p.board.filter(c => !c.summoningSick && !c.hasAttackedThisTurn);
 
@@ -125,7 +155,9 @@ function* runAiAttacksSteps(state) {
     }
 
     const best = aiBestTrade(state, a, opp.board);
-    if (best && best.score >= 5) {
+    const takesTrade = best && best.score >= settings.tradeThreshold &&
+      !(settings.faceOverTradeChance > 0 && Math.random() < settings.faceOverTradeChance);
+    if (takesTrade) {
       const result = attack(state, 'ai', a.uid, 'card', best.card.uid);
       yield { type: 'attack', attacker: a, targetType: 'card', target: best.card, result };
     } else {

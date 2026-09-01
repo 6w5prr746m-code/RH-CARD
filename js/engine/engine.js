@@ -25,17 +25,18 @@ function makeCardInstance(cardId) {
   return {
     uid: nextUid('c'),
     cardId,
+    cardType: tpl.cardType || 'MINION',
     name: tpl.name,
     domain: tpl.domain,
     rarity: tpl.rarity,
     baseCost: tpl.cost,
-    baseAtk: tpl.atk,
-    baseDef: tpl.def,
-    baseHp: tpl.hp,
-    currentAtk: tpl.atk,
-    currentDef: tpl.def,
-    currentHp: tpl.hp,
-    maxHp: tpl.hp,
+    baseAtk: tpl.atk || 0,
+    baseDef: tpl.def || 0,
+    baseHp: tpl.hp || 0,
+    currentAtk: tpl.atk || 0,
+    currentDef: tpl.def || 0,
+    currentHp: tpl.hp || 0,
+    maxHp: tpl.hp || 0,
     keywords: new Set(tpl.keywords || []),
     pointFaible: !!tpl.pointFaible,
     onPlay: tpl.onPlay || [],
@@ -238,6 +239,24 @@ function applyTurnStartCardAuras(state, playerId) {
   }
 }
 
+// ---------------------------------------------------------------- mulligan
+
+// Swaps the given hand cards back into the deck (at a random position, as if
+// reshuffled) and draws the same number of replacements. Intended for the
+// one-time opening-hand mulligan only; the board is still empty at that
+// point so it has no other gameplay side effects.
+function mulligan(state, playerId, uids) {
+  const p = state.players[playerId];
+  for (const uid of uids) {
+    const idx = p.hand.findIndex(c => c.uid === uid);
+    if (idx === -1) continue;
+    const [card] = p.hand.splice(idx, 1);
+    const insertAt = Math.floor(Math.random() * (p.deck.length + 1));
+    p.deck.splice(insertAt, 0, card);
+  }
+  if (uids.length > 0) drawCards(state, playerId, uids.length);
+}
+
 // ---------------------------------------------------------------- drawing
 
 function drawCards(state, playerId, n) {
@@ -385,17 +404,22 @@ function playCard(state, playerId, handUid) {
 
   const cost = computeCost(state, playerId, card, { consume: false });
   if (cost > p.mana) return { ok: false, error: 'Mana insuffisant.' };
-  if (p.board.length >= MAX_BOARD) return { ok: false, error: 'Plateau plein (7 cartes max).' };
+  const isAction = card.cardType === 'ACTION';
+  if (!isAction && p.board.length >= MAX_BOARD) return { ok: false, error: 'Plateau plein (7 cartes max).' };
 
   computeCost(state, playerId, card, { consume: true });
   p.mana -= cost;
   p.hand.splice(idx, 1);
-  card.summoningSick = !card.keywords.has('Charge');
-  card.hasAttackedThisTurn = false;
-  p.board.push(card);
+  if (isAction) {
+    p.graveyard.push(card);
+  } else {
+    card.summoningSick = !card.keywords.has('Charge');
+    card.hasAttackedThisTurn = false;
+    p.board.push(card);
+  }
   log(state, `${playerId === 'player' ? 'Vous jouez' : "L'IA joue"} ${card.name}.`);
 
-  const job = { type: 'onPlay', effects: (card.onPlay || []).slice(), stepIndex: 0, playerId, sourceUid: card.uid };
+  const job = { type: 'onPlay', effects: (card.onPlay || []).slice(), stepIndex: 0, playerId, sourceCard: card };
   state.pendingJob = job;
   const result = advanceJob(state);
   checkStateBasedActions(state);
@@ -438,8 +462,8 @@ function resolvePendingChoice(state, selection) {
 }
 
 function findSourceCard(state, job) {
-  const p = state.players[job.playerId];
-  return p.board.find(c => c.uid === job.sourceUid) || null;
+  void state;
+  return job.sourceCard || null;
 }
 
 function tryApplyEffect(state, job, effect) {

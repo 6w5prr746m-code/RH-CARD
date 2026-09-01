@@ -9,6 +9,8 @@ function showScreen(name) {
 
 function startNewGame(playerDeckList) {
   lastPlayerDeckList = playerDeckList.slice();
+  setAiDifficulty(document.getElementById('ai-difficulty-select').value);
+  localStorage.setItem('rhcard_ai_difficulty', AI_DIFFICULTY);
   const aiDeckList = buildAiDeck();
   gameState = createGameState(playerDeckList, aiDeckList);
   selectedAttackerUid = null;
@@ -16,8 +18,7 @@ function startNewGame(playerDeckList) {
   resetFxState();
   showScreen('game');
   renderGame();
-  showBanner('VOTRE TOUR');
-  SFX.play('turnStart');
+  startMulliganPhase();
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -27,6 +28,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const muteLabel = SFX.isMuted() ? '🔇' : '🔊';
   document.querySelectorAll('#btn-mute-game, #btn-mute-builder').forEach(b => { b.textContent = muteLabel; });
+
+  const savedDifficulty = localStorage.getItem('rhcard_ai_difficulty');
+  if (savedDifficulty) document.getElementById('ai-difficulty-select').value = savedDifficulty;
 
   document.addEventListener('click', function unlockAudioOnce() {
     SFX.unlock();

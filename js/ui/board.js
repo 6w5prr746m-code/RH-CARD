@@ -356,18 +356,20 @@ function handCardHtml(state, card) {
       </div>`;
   }
   const cost = computeCost(state, 'player', card, { consume: false });
-  const affordable = cost <= state.players.player.mana && state.players.player.board.length < MAX_BOARD;
+  const isAction = card.cardType === 'ACTION';
+  const affordable = cost <= state.players.player.mana && (isAction || state.players.player.board.length < MAX_BOARD);
   const color = DOMAIN_COLORS[card.domain] || '#666';
   return `
     <div class="hand-card ${rarityClass(card.rarity)} ${affordable ? '' : 'unaffordable'}" data-uid="${card.uid}" style="--dcolor:${color}" title="${escapeAttr(cardAbilityText(card))}">
       <div class="hc-cost">${cost}</div>
       <div class="hc-name"><span class="domain-icon">${DOMAIN_ICONS[card.domain] || ''}</span>${card.name}</div>
-      <div class="hc-ability">${DOMAIN_LABELS[card.domain]} · ${rarityLabel(card.rarity)}${card.pointFaible ? ' · PF' : ''}</div>
+      <div class="hc-ability">${DOMAIN_LABELS[card.domain]} · ${rarityLabel(card.rarity)}${isAction ? ' · <span class="action-tag">⚡ Action</span>' : ''}${card.pointFaible ? ' · PF' : ''}</div>
+      ${isAction ? '' : `
       <div class="hc-stats">
         <span class="mc-atk">${card.currentAtk}</span>
         <span class="mc-def">${card.currentDef}</span>
         <span class="mc-hp">${card.currentHp}</span>
-      </div>
+      </div>`}
     </div>`;
 }
 
@@ -427,10 +429,11 @@ function renderModals() {
 
 function tinyCardHtml(card) {
   const color = DOMAIN_COLORS[card.domain] || '#666';
+  const isAction = card.cardType === 'ACTION';
   return `<div class="mini-card ${rarityClass(card.rarity)}" data-choice-uid="${card.uid}" style="--dcolor:${color}" title="${escapeAttr(cardAbilityText(card))}">
     <div class="mc-name"><span class="domain-icon">${DOMAIN_ICONS[card.domain] || ''}</span>${card.name}</div>
-    <div class="mc-kw">${DOMAIN_LABELS[card.domain] || ''}</div>
-    <div class="mc-stats"><span class="mc-atk">${card.baseAtk ?? card.atk}</span><span class="mc-def">${card.baseDef ?? card.def}</span><span class="mc-hp">${card.baseHp ?? card.hp}</span></div>
+    <div class="mc-kw">${DOMAIN_LABELS[card.domain] || ''}${isAction ? ' · ⚡' : ''}</div>
+    ${isAction ? '' : `<div class="mc-stats"><span class="mc-atk">${card.baseAtk ?? card.atk}</span><span class="mc-def">${card.baseDef ?? card.def}</span><span class="mc-hp">${card.baseHp ?? card.hp}</span></div>`}
   </div>`;
 }
 
@@ -519,6 +522,55 @@ function wireChoiceModal(choice) {
       el.addEventListener('click', () => resolveChoiceFromUI(el.dataset.choiceUid));
     });
   }
+}
+
+// ---------------------------------------------------------------- mulligan
+
+let mulliganSelected = new Set();
+
+function aiAutoMulligan() {
+  const ai = gameState.players.ai;
+  const swapUids = ai.hand.filter(c => !c.isToken && c.baseCost >= 4).map(c => c.uid);
+  if (swapUids.length) mulligan(gameState, 'ai', swapUids);
+}
+
+function startMulliganPhase() {
+  aiAutoMulligan();
+  showMulliganModal();
+}
+
+function showMulliganModal() {
+  mulliganSelected = new Set();
+  const root = document.getElementById('modal-root');
+  const hand = gameState.players.player.hand;
+  root.innerHTML = `
+    <div class="modal-overlay">
+      <div class="modal-box" style="max-width:640px;">
+        <h2>Mulligan — gardez ou changez votre main de départ</h2>
+        <p style="color:var(--text-dim); font-size:12px;">Cliquez sur les cartes à remplacer (une seule fois, en tout début de partie).</p>
+        <div class="modal-cards" id="mulligan-cards">${hand.map(tinyCardHtml).join('')}</div>
+        <div class="modal-actions"><button id="mulligan-confirm" class="primary">Garder cette main</button></div>
+      </div>
+    </div>`;
+  root.querySelectorAll('#mulligan-cards [data-choice-uid]').forEach(el => {
+    el.classList.add('selectable');
+    el.addEventListener('click', () => {
+      const uid = el.dataset.choiceUid;
+      SFX.play('click');
+      if (mulliganSelected.has(uid)) { mulliganSelected.delete(uid); el.classList.remove('selected'); }
+      else { mulliganSelected.add(uid); el.classList.add('selected'); }
+    });
+  });
+  document.getElementById('mulligan-confirm').addEventListener('click', () => {
+    if (mulliganSelected.size > 0) {
+      mulligan(gameState, 'player', Array.from(mulliganSelected));
+      SFX.play('draw');
+    }
+    document.getElementById('modal-root').innerHTML = '';
+    renderGame();
+    showBanner('VOTRE TOUR');
+    SFX.play('turnStart');
+  });
 }
 
 function showGameOver() {

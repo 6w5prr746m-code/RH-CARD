@@ -105,13 +105,14 @@ function cardTileHtml(card) {
   const max = maxCopiesFor(card);
   const maxed = count >= max || totalDeckSize() >= DECK_MAX;
   const color = DOMAIN_COLORS[card.domain] || '#666';
+  const isAction = card.cardType === 'ACTION';
   return `
     <div class="card-tile ${rarityClass(card.rarity)} ${maxed ? 'maxed' : ''}" data-id="${card.id}" style="--dcolor:${color}">
       <div class="cost-badge">${card.cost}</div>
       ${count > 0 ? `<div class="count-badge">×${count}</div>` : ''}
       <div class="name"><span class="domain-icon">${DOMAIN_ICONS[card.domain] || ''}</span>${card.name}</div>
-      <div class="stars">${rarityLabel(card.rarity)} · ${DOMAIN_LABELS[card.domain]}</div>
-      <div class="statline"><span>${card.atk} ATK</span><span>${card.def} DEF</span><span>${card.hp} HP</span></div>
+      <div class="stars">${rarityLabel(card.rarity)} · ${DOMAIN_LABELS[card.domain]}${isAction ? ' · <span class="action-tag">⚡ Action</span>' : ''}</div>
+      ${isAction ? '' : `<div class="statline"><span>${card.atk} ATK</span><span>${card.def} DEF</span><span>${card.hp} HP</span></div>`}
       <div class="ability">${cardAbilityText(card)}</div>
       ${card.pointFaible ? '<div class="pf-tag">Point Faible</div>' : ''}
     </div>`;
