@@ -52,7 +52,14 @@
   <div class="game-body">
     <div class="top-bar">
       <div class="turn-indicator" id="turn-indicator">Tour 1</div>
-      <div style="display:flex; gap:8px;">
+      <div style="display:flex; gap:8px; align-items:center;">
+        <label style="font-size:12px; color:var(--text-dim);">Vitesse :
+          <select id="anim-speed-select">
+            <option value="instant">Instantané</option>
+            <option value="normal" selected>Normal</option>
+            <option value="cinematic">Cinématique</option>
+          </select>
+        </label>
         <button id="btn-mute-game" class="icon-btn" title="Activer/couper le son">🔊</button>
         <button id="btn-back-to-builder">← Deck builder</button>
       </div>
@@ -81,6 +88,7 @@
   </div>
 
   <div class="game-controls">
+    <button id="btn-skip-ai" class="hidden">⏭ Passer le tour de l'IA</button>
     <button id="end-turn-btn">Fin de tour</button>
   </div>
 

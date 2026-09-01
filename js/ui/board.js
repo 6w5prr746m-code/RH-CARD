@@ -4,7 +4,22 @@ let gameState = null;
 let selectedAttackerUid = null;
 let inputLocked = false;
 
-function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+const ANIM_SPEED_FACTORS = { instant: 0, normal: 1, cinematic: 1.6 };
+let animSpeed = localStorage.getItem('rhcard_anim_speed') || 'normal';
+if (!(animSpeed in ANIM_SPEED_FACTORS)) animSpeed = 'normal';
+
+function setAnimSpeed(speed) {
+  if (!(speed in ANIM_SPEED_FACTORS)) return;
+  animSpeed = speed;
+  localStorage.setItem('rhcard_anim_speed', speed);
+}
+
+let skipRequested = false;
+
+function sleep(ms) {
+  const factor = skipRequested ? 0 : ANIM_SPEED_FACTORS[animSpeed];
+  return new Promise(r => setTimeout(r, ms * factor));
+}
 
 function escapeAttr(str) {
   return String(str).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
@@ -60,6 +75,9 @@ function initBoardUI() {
     showScreen('deckbuilder');
   });
   document.getElementById('btn-mute-game').addEventListener('click', (e) => toggleMuteButton(e.currentTarget));
+  document.getElementById('btn-skip-ai').addEventListener('click', handleSkipAiTurn);
+  document.getElementById('anim-speed-select').addEventListener('change', (e) => setAnimSpeed(e.target.value));
+  document.getElementById('anim-speed-select').value = animSpeed;
   attachHolographicTilt('#player-hand', '.hand-card');
 }
 
@@ -276,36 +294,53 @@ async function handleEndTurn() {
   if (gameState.winner) showGameOver();
 }
 
-async function runAiTurnAnimated() {
-  const iter = runAiTurnSteps(gameState);
-  while (true) {
-    const before = captureSnapshot(gameState);
-    const beforeRects = captureRects();
-    const { value: step, done } = iter.next();
-    if (done) break;
-    if (!step.result || !step.result.ok) continue;
+function handleSkipAiTurn() {
+  skipRequested = true;
+  SFX.play('click');
+}
 
-    if (step.type === 'play') {
-      SFX.play(step.card.cardId === 'peoplespheres' ? 'legendary' : 'cardPlay');
-      renderGame();
-      animateDiff(before, captureSnapshot(gameState), beforeRects);
-      if (step.card.cardId === 'peoplespheres') { showBanner('SYNCHRONISATION UNIVERSELLE (IA)', { epic: true }); spawnConfetti(20); }
-    } else if (step.type === 'attack') {
-      SFX.play('attack');
-      const fromRect = beforeRects[step.attacker.uid];
-      const toRect = step.targetType === 'hero' ? heroRect('player') : beforeRects[step.target.uid];
-      await new Promise((resolve) => {
-        spawnAttackProjectile(fromRect, toRect, () => {
+async function runAiTurnAnimated() {
+  skipRequested = false;
+  const skipBtn = document.getElementById('btn-skip-ai');
+  skipBtn.classList.remove('hidden');
+  try {
+    const iter = runAiTurnSteps(gameState);
+    while (true) {
+      const before = captureSnapshot(gameState);
+      const beforeRects = captureRects();
+      const { value: step, done } = iter.next();
+      if (done) break;
+      if (!step.result || !step.result.ok) continue;
+
+      if (step.type === 'play') {
+        SFX.play(step.card.cardId === 'peoplespheres' ? 'legendary' : 'cardPlay');
+        renderGame();
+        animateDiff(before, captureSnapshot(gameState), beforeRects);
+        if (step.card.cardId === 'peoplespheres') { showBanner('SYNCHRONISATION UNIVERSELLE (IA)', { epic: true }); spawnConfetti(20); }
+      } else if (step.type === 'attack') {
+        SFX.play('attack');
+        if (skipRequested) {
           renderGame();
           animateDiff(before, captureSnapshot(gameState), beforeRects);
-          resolve();
-        });
-      });
+        } else {
+          const fromRect = beforeRects[step.attacker.uid];
+          const toRect = step.targetType === 'hero' ? heroRect('player') : beforeRects[step.target.uid];
+          await new Promise((resolve) => {
+            spawnAttackProjectile(fromRect, toRect, () => {
+              renderGame();
+              animateDiff(before, captureSnapshot(gameState), beforeRects);
+              resolve();
+            });
+          });
+        }
+      }
+      await sleep(500);
+      if (gameState.winner) { showGameOver(); return; }
     }
-    await sleep(500);
-    if (gameState.winner) { showGameOver(); return; }
+    renderGame();
+  } finally {
+    skipBtn.classList.add('hidden');
   }
-  renderGame();
 }
 
 function resolveChoiceFromUI(selection) {
