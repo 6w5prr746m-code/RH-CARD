@@ -178,14 +178,12 @@ function initBoardUI() {
     SFX.play('click');
     showScreen('deckbuilder');
   });
-  document.getElementById('btn-mute-game').addEventListener('click', (e) => toggleMuteButton(e.currentTarget));
+  document.getElementById('btn-options-game').addEventListener('click', showOptionsModal);
   document.getElementById('btn-toggle-side-panel').addEventListener('click', () => {
     SFX.play('click');
     document.querySelector('.side-panel').classList.toggle('open');
   });
   document.getElementById('btn-skip-ai').addEventListener('click', handleSkipAiTurn);
-  document.getElementById('anim-speed-select').addEventListener('change', (e) => setAnimSpeed(e.target.value));
-  document.getElementById('anim-speed-select').value = animSpeed;
   attachHolographicTilt('#player-hand', '.hand-card');
   initAttackPreview();
 }
@@ -228,12 +226,62 @@ function hideAttackPreview() {
   document.getElementById('atk-preview').classList.add('hidden');
 }
 
-function toggleMuteButton(btn) {
-  const muted = SFX.toggleMute();
-  const label = muted ? '🔇' : '🔊';
-  document.querySelectorAll('#btn-mute-game, #btn-mute-builder').forEach(b => { b.textContent = label; });
-  if (!muted) SFX.play('click');
-  void btn;
+// ---------------------------------------------------------------- theme
+
+const THEME_KEY = 'rhcard_theme';
+let currentTheme = localStorage.getItem(THEME_KEY) || 'system';
+
+function applyTheme(theme) {
+  currentTheme = theme;
+  if (theme === 'system') document.documentElement.removeAttribute('data-theme');
+  else document.documentElement.setAttribute('data-theme', theme);
+  localStorage.setItem(THEME_KEY, theme);
+}
+
+// ---------------------------------------------------------------- options modal
+
+function showOptionsModal() {
+  SFX.play('click');
+  const root = document.getElementById('modal-root');
+  root.innerHTML = `
+    <div class="modal-overlay" id="options-overlay">
+      <div class="modal-box" style="max-width:380px;">
+        <h2>Options</h2>
+        <div class="options-row">
+          <span>Son</span>
+          <button id="opt-mute-toggle" class="icon-btn">${SFX.isMuted() ? '🔇 Coupé' : '🔊 Activé'}</button>
+        </div>
+        <div class="options-row">
+          <span>Vitesse des animations</span>
+          <select id="opt-anim-speed">
+            <option value="instant">Instantané</option>
+            <option value="normal">Normal</option>
+            <option value="cinematic">Cinématique</option>
+          </select>
+        </div>
+        <div class="options-row">
+          <span>Thème</span>
+          <select id="opt-theme">
+            <option value="system">Système</option>
+            <option value="dark">Sombre</option>
+            <option value="light">Clair</option>
+          </select>
+        </div>
+        <div class="modal-actions"><button id="opt-close" class="primary">Fermer</button></div>
+      </div>
+    </div>`;
+  document.getElementById('opt-anim-speed').value = animSpeed;
+  document.getElementById('opt-theme').value = currentTheme;
+
+  document.getElementById('opt-mute-toggle').addEventListener('click', (e) => {
+    const muted = SFX.toggleMute();
+    e.currentTarget.textContent = muted ? '🔇 Coupé' : '🔊 Activé';
+    if (!muted) SFX.play('click');
+  });
+  document.getElementById('opt-anim-speed').addEventListener('change', (e) => setAnimSpeed(e.target.value));
+  document.getElementById('opt-theme').addEventListener('change', (e) => applyTheme(e.target.value));
+  document.getElementById('options-overlay').addEventListener('click', (e) => { if (e.target.id === 'options-overlay') root.innerHTML = ''; });
+  document.getElementById('opt-close').addEventListener('click', () => { root.innerHTML = ''; });
 }
 
 // ---------------------------------------------------------------- fx: snapshot & diff

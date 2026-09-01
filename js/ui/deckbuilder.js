@@ -67,7 +67,7 @@ function initDeckBuilder() {
     renderDeckPanel();
   });
   document.getElementById('btn-start-game').addEventListener('click', handleStartGameClick);
-  document.getElementById('btn-mute-builder').addEventListener('click', (e) => toggleMuteButton(e.currentTarget));
+  document.getElementById('btn-options-builder').addEventListener('click', showOptionsModal);
   document.getElementById('btn-open-booster').addEventListener('click', handleOpenBooster);
 
   document.getElementById('btn-save-deck').addEventListener('click', () => {

@@ -138,8 +138,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('mode-vsai').addEventListener('click', () => { SFX.play('tabSwitch'); setAppMode('vsAI'); });
   document.getElementById('mode-local2p').addEventListener('click', () => { SFX.play('tabSwitch'); setAppMode('local2p'); });
 
-  const muteLabel = SFX.isMuted() ? '🔇' : '🔊';
-  document.querySelectorAll('#btn-mute-game, #btn-mute-builder').forEach(b => { b.textContent = muteLabel; });
+  applyTheme(currentTheme);
 
   const savedDifficulty = localStorage.getItem('rhcard_ai_difficulty');
   if (savedDifficulty) document.getElementById('ai-difficulty-select').value = savedDifficulty;
