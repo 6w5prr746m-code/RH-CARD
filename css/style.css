@@ -20,6 +20,7 @@ html, body {
   background: var(--bg);
   color: var(--text);
   height: 100%;
+  overflow-x: hidden;
 }
 
 button {
@@ -541,5 +542,59 @@ select {
 .cz-stats > div { display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 11px; color: var(--text-dim); font-weight: 600; }
 .cz-stats span { font-size: 22px; font-weight: 800; }
 .cz-ability { font-size: 13.5px; line-height: 1.55; color: var(--text); }
+
+.side-panel-toggle { display: none; }
+
+/* ---------------------------------------------------------- Responsive */
+
+@media (max-width: 900px) {
+  .side-panel-toggle { display: inline-flex; }
+
+  .game-body { margin-right: 0; }
+  .game-controls { right: 12px; }
+
+  .side-panel {
+    width: min(84vw, 320px);
+    transform: translateX(100%);
+    transition: transform 0.25s ease;
+    box-shadow: -8px 0 24px rgba(0,0,0,0.5);
+  }
+  .side-panel.open { transform: translateX(0); }
+
+  .mini-card { width: 88px; min-height: 108px; }
+  .hand-card { width: 96px; min-height: 148px; }
+  .hand-row { min-height: 160px; padding: 10px; }
+  .board-row { min-height: 120px; }
+
+  .builder-body { flex-direction: column; overflow-y: auto; }
+  .pool-grid {
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    max-height: 52vh;
+  }
+  .deck-panel { width: 100%; border-left: none; border-top: 1px solid var(--border); }
+  .deck-list { max-height: 22vh; }
+
+  #screen-deckbuilder header { flex-direction: column; align-items: flex-start; gap: 10px; }
+}
+
+@media (max-width: 600px) {
+  .hero-row { flex-wrap: wrap; gap: 8px; padding: 8px 12px; }
+  .hero-info { flex-wrap: wrap; gap: 6px; }
+  .hero-hp, .hero-mana { font-size: 13px; padding: 3px 8px; }
+
+  .mini-card { width: 74px; min-height: 96px; font-size: 10px; }
+  .hand-card { width: 82px; min-height: 130px; font-size: 10px; }
+  .hand-row { gap: 5px; padding: 8px; }
+  .board-row { gap: 5px; padding: 6px; }
+
+  .game-controls { right: 8px; bottom: 12px; top: auto; transform: none; flex-direction: row; }
+  #end-turn-btn { padding: 10px 14px; font-size: 13px; }
+
+  .card-tile { padding: 6px; font-size: 11px; }
+  .pool-grid { grid-template-columns: repeat(auto-fill, minmax(108px, 1fr)); gap: 6px; padding: 10px; }
+
+  .card-zoom { width: 88vw; }
+  .modal-box { padding: 14px; }
+}
 
 .hidden { display: none !important; }

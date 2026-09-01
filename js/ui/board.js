@@ -179,6 +179,10 @@ function initBoardUI() {
     showScreen('deckbuilder');
   });
   document.getElementById('btn-mute-game').addEventListener('click', (e) => toggleMuteButton(e.currentTarget));
+  document.getElementById('btn-toggle-side-panel').addEventListener('click', () => {
+    SFX.play('click');
+    document.querySelector('.side-panel').classList.toggle('open');
+  });
   document.getElementById('btn-skip-ai').addEventListener('click', handleSkipAiTurn);
   document.getElementById('anim-speed-select').addEventListener('change', (e) => setAnimSpeed(e.target.value));
   document.getElementById('anim-speed-select').value = animSpeed;
