@@ -497,4 +497,15 @@ select {
 .pass-device-icon { font-size: 48px; margin-bottom: 14px; }
 .pass-device-box #pass-device-text { font-size: 22px; font-weight: 700; margin-bottom: 18px; }
 
+#atk-preview {
+  position: fixed; transform: translate(-50%, -100%);
+  background: rgba(10, 12, 20, 0.95); border: 1px solid var(--accent-2);
+  border-radius: 6px; padding: 6px 10px; font-size: 12px; font-weight: 700;
+  z-index: 190; pointer-events: none; white-space: nowrap;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.5);
+}
+.atk-preview-row { display: flex; align-items: center; gap: 4px; }
+.atk-preview-dmg { color: var(--danger); }
+.atk-preview-return { color: var(--accent-2); font-weight: 600; font-size: 11px; }
+
 .hidden { display: none !important; }

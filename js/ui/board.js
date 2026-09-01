@@ -108,6 +108,45 @@ function initBoardUI() {
   document.getElementById('anim-speed-select').addEventListener('change', (e) => setAnimSpeed(e.target.value));
   document.getElementById('anim-speed-select').value = animSpeed;
   attachHolographicTilt('#player-hand', '.hand-card');
+  initAttackPreview();
+}
+
+// ---------------------------------------------------------------- attack preview
+
+function initAttackPreview() {
+  const aiBoard = document.getElementById('ai-board');
+  const aiHero = document.getElementById('ai-hero-target');
+  aiBoard.addEventListener('mouseover', (e) => {
+    const el = e.target.closest('.mini-card.targetable');
+    if (el) showAttackPreview('card', el.dataset.uid, el);
+  });
+  aiBoard.addEventListener('mouseout', (e) => {
+    if (e.target.closest('.mini-card.targetable')) hideAttackPreview();
+  });
+  aiHero.addEventListener('mouseover', () => {
+    if (aiHero.classList.contains('attackable')) showAttackPreview('hero', null, aiHero);
+  });
+  aiHero.addEventListener('mouseout', hideAttackPreview);
+}
+
+function showAttackPreview(targetType, targetUid, anchorEl) {
+  if (!selectedAttackerUid || !gameState) return;
+  const preview = computeAttackPreview(gameState, humanSeat(), selectedAttackerUid, targetType, targetUid);
+  if (!preview) return;
+  const el = document.getElementById('atk-preview');
+  const rect = anchorEl.getBoundingClientRect();
+  el.style.left = `${rect.left + rect.width / 2}px`;
+  el.style.top = `${rect.top - 8}px`;
+  let html = `<div class="atk-preview-row atk-preview-dmg">⚔ ${preview.dmgToDefender} dégâts${preview.lethalDefender ? ' — LÉTAL' : ''}</div>`;
+  if (preview.targetType === 'card') {
+    html += `<div class="atk-preview-row atk-preview-return">↩ ${preview.dmgToAttacker} reçus${preview.lethalAttacker ? ' — votre carte meurt' : ''}</div>`;
+  }
+  el.innerHTML = html;
+  el.classList.remove('hidden');
+}
+
+function hideAttackPreview() {
+  document.getElementById('atk-preview').classList.add('hidden');
 }
 
 function toggleMuteButton(btn) {
@@ -383,6 +422,7 @@ function resolveChoiceFromUI(selection) {
 
 function renderGame() {
   if (!gameState) return;
+  hideAttackPreview();
   const bottomSeat = humanSeat();
   const topSeat = otherSeat();
   const bottom = gameState.players[bottomSeat];

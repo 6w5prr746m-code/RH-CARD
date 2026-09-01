@@ -739,6 +739,54 @@ function applyChoiceSelection(state, choice, selection) {
 
 // ---------------------------------------------------------------- combat
 
+// Pure combat math shared by attack() (which applies it) and the UI's
+// hover preview (which only reads it) — kept as one function so the two can
+// never drift apart.
+function computeAttackPreview(state, playerId, attackerUid, targetType, targetUid) {
+  const p = state.players[playerId];
+  const opponentId = opponentOf(playerId);
+  const opp = state.players[opponentId];
+  const attacker = p.board.find(c => c.uid === attackerUid);
+  if (!attacker) return null;
+
+  if (targetType === 'hero') {
+    const attackerAtk = getEffectiveAtk(state, playerId, attacker);
+    const reduction = heroDamageReduction(state, opponentId);
+    const dmgToDefender = attackerAtk <= 0 ? 0 : Math.max(1, attackerAtk - reduction);
+    return {
+      targetType: 'hero', attackerAtk, defenderAtk: 0,
+      dmgToDefender, dmgToAttacker: 0,
+      lethalDefender: dmgToDefender >= opp.heroHp, lethalAttacker: false,
+    };
+  }
+
+  const defender = opp.board.find(c => c.uid === targetUid);
+  if (!defender) return null;
+
+  let attackerAtk = getEffectiveAtk(state, playerId, attacker);
+  let defenderAtk = getEffectiveAtk(state, opponentId, defender);
+  const attackerDef = getEffectiveDef(state, opponentId, defender);
+  const defenderDef = getEffectiveDef(state, playerId, attacker);
+
+  const pfPair = pointFaiblePair(attacker, defender);
+  if (pfPair) {
+    if (pfPair.pf === attacker) attackerAtk = Math.max(0, attackerAtk - 2);
+    else attackerAtk += 2;
+    if (pfPair.pf === defender) defenderAtk = Math.max(0, defenderAtk - 2);
+    else defenderAtk += 2;
+  }
+
+  const dmgToDefender = attackerAtk <= 0 ? 0 : Math.max(1, attackerAtk - attackerDef);
+  const dmgToAttacker = defenderAtk <= 0 ? 0 : Math.max(1, defenderAtk - defenderDef);
+
+  return {
+    targetType: 'card', attackerAtk, defenderAtk,
+    dmgToDefender, dmgToAttacker,
+    lethalDefender: dmgToDefender >= defender.currentHp,
+    lethalAttacker: dmgToAttacker >= attacker.currentHp,
+  };
+}
+
 function attack(state, playerId, attackerUid, targetType, targetUid) {
   if (state.winner || state.pendingChoice) return { ok: false, error: 'Action indisponible.' };
   const p = state.players[playerId];
@@ -757,12 +805,11 @@ function attack(state, playerId, attackerUid, targetType, targetUid) {
     }
   }
 
-  let attackerAtk = getEffectiveAtk(state, playerId, attacker);
-
   if (targetType === 'hero') {
-    damageHero(state, opponentId, attackerAtk, false, attacker.cardId);
+    const preview = computeAttackPreview(state, playerId, attackerUid, 'hero', null);
+    damageHero(state, opponentId, preview.attackerAtk, false, attacker.cardId);
     attacker.hasAttackedThisTurn = true;
-    log(state, `${cardLabel(playerId)} ${attacker.name} attaque le héros adverse (${attackerAtk} dégâts).`);
+    log(state, `${cardLabel(playerId)} ${attacker.name} attaque le héros adverse (${preview.attackerAtk} dégâts).`);
     recordSynergyPeak(state);
     checkWinCondition(state);
     return { ok: true };
@@ -771,28 +818,14 @@ function attack(state, playerId, attackerUid, targetType, targetUid) {
   const defender = opp.board.find(c => c.uid === targetUid);
   if (!defender) return { ok: false, error: 'Cible introuvable.' };
 
-  let defenderAtk = getEffectiveAtk(state, opponentId, defender);
-  const attackerDef = getEffectiveDef(state, opponentId, defender);
-  const defenderDef = getEffectiveDef(state, playerId, attacker);
-
-  const pfPair = pointFaiblePair(attacker, defender);
-  if (pfPair) {
-    if (pfPair.pf === attacker) attackerAtk = Math.max(0, attackerAtk - 2);
-    else attackerAtk += 2;
-    if (pfPair.pf === defender) defenderAtk = Math.max(0, defenderAtk - 2);
-    else defenderAtk += 2;
-  }
-
-  const dmgToDefender = attackerAtk <= 0 ? 0 : Math.max(1, attackerAtk - attackerDef);
-  const dmgToAttacker = defenderAtk <= 0 ? 0 : Math.max(1, defenderAtk - defenderDef);
-
-  defender.currentHp -= dmgToDefender;
-  attacker.currentHp -= dmgToAttacker;
+  const preview = computeAttackPreview(state, playerId, attackerUid, 'card', targetUid);
+  defender.currentHp -= preview.dmgToDefender;
+  attacker.currentHp -= preview.dmgToAttacker;
   attacker.hasAttackedThisTurn = true;
-  recordDamageDealt(state, playerId, attacker.cardId, dmgToDefender);
-  recordDamageDealt(state, opponentId, defender.cardId, dmgToAttacker);
+  recordDamageDealt(state, playerId, attacker.cardId, preview.dmgToDefender);
+  recordDamageDealt(state, opponentId, defender.cardId, preview.dmgToAttacker);
 
-  log(state, `${cardLabel(playerId)} ${attacker.name} (${attackerAtk} ATK) affronte ${defender.name} : ${dmgToDefender} dégâts infligés, ${dmgToAttacker} dégâts reçus.`);
+  log(state, `${cardLabel(playerId)} ${attacker.name} (${preview.attackerAtk} ATK) affronte ${defender.name} : ${preview.dmgToDefender} dégâts infligés, ${preview.dmgToAttacker} dégâts reçus.`);
 
   checkStateBasedActions(state);
   checkWinCondition(state);
