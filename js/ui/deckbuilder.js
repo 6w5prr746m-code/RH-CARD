@@ -68,6 +68,7 @@ function initDeckBuilder() {
   });
   document.getElementById('btn-start-game').addEventListener('click', handleStartGameClick);
   document.getElementById('btn-options-builder').addEventListener('click', showOptionsModal);
+  document.getElementById('btn-theme-toggle-builder').addEventListener('click', toggleThemeQuick);
   document.getElementById('btn-open-booster').addEventListener('click', handleOpenBooster);
 
   document.getElementById('btn-save-deck').addEventListener('click', () => {

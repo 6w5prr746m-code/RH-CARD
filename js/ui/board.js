@@ -179,6 +179,7 @@ function initBoardUI() {
     showScreen('deckbuilder');
   });
   document.getElementById('btn-options-game').addEventListener('click', showOptionsModal);
+  document.getElementById('btn-theme-toggle-game').addEventListener('click', toggleThemeQuick);
   document.getElementById('btn-toggle-side-panel').addEventListener('click', () => {
     SFX.play('click');
     document.querySelector('.side-panel').classList.toggle('open');
@@ -236,6 +237,23 @@ function applyTheme(theme) {
   if (theme === 'system') document.documentElement.removeAttribute('data-theme');
   else document.documentElement.setAttribute('data-theme', theme);
   localStorage.setItem(THEME_KEY, theme);
+  updateThemeToggleIcons();
+}
+
+function effectiveThemeIsLight() {
+  if (currentTheme === 'light') return true;
+  if (currentTheme === 'dark') return false;
+  return window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches;
+}
+
+function updateThemeToggleIcons() {
+  const icon = effectiveThemeIsLight() ? '☀️' : '🌙';
+  document.querySelectorAll('.theme-toggle-btn').forEach(b => { b.textContent = icon; });
+}
+
+function toggleThemeQuick() {
+  SFX.play('click');
+  applyTheme(effectiveThemeIsLight() ? 'dark' : 'light');
 }
 
 // ---------------------------------------------------------------- options modal
