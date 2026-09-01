@@ -12,10 +12,14 @@
   <header>
     <div>
       <h1>RH CARD — Construction du deck</h1>
-      <div class="sub">Sélectionnez 25 à 30 cartes parmi les 91 éditeurs du marché SIRH.</div>
+      <div class="sub" id="deckbuilder-subtitle">Sélectionnez 25 à 30 cartes parmi les 91 éditeurs du marché SIRH.</div>
     </div>
-    <div style="display:flex; gap:8px; align-items:center;">
-      <label style="font-size:12px; color:var(--text-dim);">IA :
+    <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+      <div class="domain-tabs" style="padding:0; border:none;">
+        <button id="mode-vsai" class="active">Solo vs IA</button>
+        <button id="mode-local2p">Duel local (2 joueurs)</button>
+      </div>
+      <label id="ai-difficulty-label" style="font-size:12px; color:var(--text-dim);">IA :
         <select id="ai-difficulty-select">
           <option value="easy">Facile</option>
           <option value="normal" selected>Normal</option>
@@ -55,7 +59,7 @@
     </div>
     <div class="hero-row opponent">
       <div class="hero-info">
-        <div class="hero-name">IA adverse</div>
+        <div class="hero-name" id="ai-hero-name">IA adverse</div>
         <div class="hero-hp" id="ai-hp">30 PV</div>
         <div class="hero-mana" id="ai-mana">0 / 0 mana</div>
         <div style="color:var(--text-dim); font-size:12px;">Main: <span id="ai-hand-count">0</span> · Deck: <span id="ai-deck-count">0</span></div>
@@ -70,7 +74,7 @@
         <div style="color:var(--text-dim); font-size:12px;">Deck: <span id="player-deck-count">0</span></div>
         <div class="hero-mana" id="player-mana">0 / 0 mana</div>
         <div class="hero-hp" id="player-hp">30 PV</div>
-        <div class="hero-name">Vous (PeopleSpheres)</div>
+        <div class="hero-name" id="player-hero-name">Vous (PeopleSpheres)</div>
       </div>
     </div>
     <div class="hand-row" id="player-hand"></div>
@@ -83,6 +87,14 @@
   <div class="side-panel">
     <div class="synergy-list" id="synergy-list"></div>
     <div class="log-panel" id="log-panel"></div>
+  </div>
+
+  <div id="pass-device-overlay" class="hidden">
+    <div class="pass-device-box">
+      <div class="pass-device-icon">🔄</div>
+      <div id="pass-device-text">Passez l'appareil</div>
+      <button id="pass-device-btn" class="primary">C'est parti</button>
+    </div>
   </div>
 </section>
 

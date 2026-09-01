@@ -66,13 +66,7 @@ function initDeckBuilder() {
     renderPool();
     renderDeckPanel();
   });
-  document.getElementById('btn-start-game').addEventListener('click', () => {
-    const list = deckListFromCounts();
-    const errors = validateDeck(list);
-    if (errors.length) { SFX.play('error'); alert(errors.join('\n')); return; }
-    SFX.play('cardPlay');
-    startNewGame(list);
-  });
+  document.getElementById('btn-start-game').addEventListener('click', handleStartGameClick);
   document.getElementById('btn-mute-builder').addEventListener('click', (e) => toggleMuteButton(e.currentTarget));
   document.getElementById('btn-open-booster').addEventListener('click', handleOpenBooster);
   attachHolographicTilt('#pool-grid', '.card-tile');

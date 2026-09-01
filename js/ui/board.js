@@ -10,6 +10,15 @@ function escapeAttr(str) {
   return String(str).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
 }
 
+// In solo mode the human always sits in the 'player' seat. In local 2-player
+// pass-and-play, whichever seat's turn it is IS the human currently allowed
+// to act — the board perspective (bottom = "you", top = opponent) follows it.
+function humanSeat() {
+  return (gameState && gameState.mode === 'local2p') ? gameState.activePlayer : 'player';
+}
+function otherSeat() { return opponentOf(humanSeat()); }
+function domPrefixFor(seatId) { return seatId === humanSeat() ? 'player' : 'ai'; }
+
 function findCardAnywhere(state, uid) {
   for (const pid of ['player', 'ai']) {
     const p = state.players[pid];
@@ -21,11 +30,11 @@ function findCardAnywhere(state, uid) {
   return null;
 }
 
-let lastSeenTiers = null;
+let lastSeenTiers = null; // per-seat: { player: {domain: tier}, ai: {domain: tier} }
 
 function resetFxState() {
-  lastSeenTiers = {};
-  for (const d of SYNERGY_DOMAINS) lastSeenTiers[d] = 0;
+  lastSeenTiers = { player: {}, ai: {} };
+  for (const d of SYNERGY_DOMAINS) { lastSeenTiers.player[d] = 0; lastSeenTiers.ai[d] = 0; }
 }
 
 function initBoardUI() {
@@ -79,8 +88,8 @@ function captureRects() {
   return rects;
 }
 
-function heroRect(pid) {
-  return document.getElementById(pid === 'player' ? 'player-hero-target' : 'ai-hero-target').getBoundingClientRect();
+function heroRect(seatId) {
+  return document.getElementById(`${domPrefixFor(seatId)}-hero-target`).getBoundingClientRect();
 }
 
 function animateDiff(before, after, beforeRects) {
@@ -114,15 +123,16 @@ function animateDiff(before, after, beforeRects) {
   }
 }
 
-function checkSynergyToasts(board) {
+function checkSynergyToasts(seatId, board) {
   if (!lastSeenTiers) resetFxState();
   const tiers = getSynergyTiers(board);
+  const seen = lastSeenTiers[seatId];
   for (const d of SYNERGY_DOMAINS) {
-    if (tiers[d] > lastSeenTiers[d]) {
+    if (tiers[d] > seen[d]) {
       showSynergyToast(d, tiers[d]);
       SFX.play('synergy');
     }
-    lastSeenTiers[d] = tiers[d];
+    seen[d] = tiers[d];
   }
 }
 
@@ -137,16 +147,18 @@ function flashError(msg) {
 // ---------------------------------------------------------------- interactions
 
 function canPlayerAct() {
-  return gameState && !gameState.winner && !inputLocked && gameState.activePlayer === 'player' && !gameState.pendingChoice;
+  return gameState && !gameState.winner && !inputLocked && !gameState.pendingChoice &&
+    gameState.activePlayer === humanSeat();
 }
 
 function onHandCardClick(uid) {
   if (!canPlayerAct()) return;
-  const card = gameState.players.player.hand.find(c => c.uid === uid);
+  const seat = humanSeat();
+  const card = gameState.players[seat].hand.find(c => c.uid === uid);
   const isLegendary = card && card.cardId === 'peoplespheres';
   const before = captureSnapshot(gameState);
   const beforeRects = captureRects();
-  const res = playCard(gameState, 'player', uid);
+  const res = playCard(gameState, seat, uid);
   selectedAttackerUid = null;
   if (!res.ok) {
     SFX.play('error');
@@ -162,7 +174,8 @@ function onHandCardClick(uid) {
 
 function onPlayerBoardCardClick(uid) {
   if (!canPlayerAct()) return;
-  const card = gameState.players.player.board.find(c => c.uid === uid);
+  const seat = humanSeat();
+  const card = gameState.players[seat].board.find(c => c.uid === uid);
   if (!card) return;
   if (selectedAttackerUid === uid) { selectedAttackerUid = null; renderGame(); return; }
   if (card.summoningSick || card.hasAttackedThisTurn) {
@@ -176,10 +189,12 @@ function onPlayerBoardCardClick(uid) {
 }
 
 function performPlayerAttack(targetType, targetUid) {
+  const seat = humanSeat();
+  const oppSeat = otherSeat();
   const attackerUid = selectedAttackerUid;
   const beforeRects = captureRects();
   const before = captureSnapshot(gameState);
-  const res = attack(gameState, 'player', attackerUid, targetType, targetUid);
+  const res = attack(gameState, seat, attackerUid, targetType, targetUid);
   selectedAttackerUid = null;
   if (!res.ok) {
     SFX.play('error');
@@ -189,7 +204,7 @@ function performPlayerAttack(targetType, targetUid) {
   }
   SFX.play('attack');
   const fromRect = beforeRects[attackerUid];
-  const toRect = targetType === 'hero' ? heroRect('ai') : beforeRects[targetUid];
+  const toRect = targetType === 'hero' ? heroRect(oppSeat) : beforeRects[targetUid];
   spawnAttackProjectile(fromRect, toRect, () => {
     renderGame();
     animateDiff(before, captureSnapshot(gameState), beforeRects);
@@ -207,11 +222,42 @@ function onEnemyHeroClick() {
   performPlayerAttack('hero', null);
 }
 
+function showPassDevice(label, onContinue) {
+  document.getElementById('pass-device-text').textContent = `Passez l'appareil à ${label}`;
+  document.getElementById('pass-device-overlay').classList.remove('hidden');
+  const btn = document.getElementById('pass-device-btn');
+  const handler = () => {
+    SFX.play('click');
+    document.getElementById('pass-device-overlay').classList.add('hidden');
+    btn.removeEventListener('click', handler);
+    onContinue();
+  };
+  btn.addEventListener('click', handler);
+}
+
+function seatLabel(seatId) {
+  return gameState.mode === 'local2p' ? (seatId === 'player' ? 'Joueur 1' : 'Joueur 2') : (seatId === 'player' ? 'Vous' : "L'IA");
+}
+
 async function handleEndTurn() {
   if (!canPlayerAct()) return;
   inputLocked = true;
   selectedAttackerUid = null;
-  endTurn(gameState, 'player');
+  const finishedSeat = humanSeat();
+  endTurn(gameState, finishedSeat);
+
+  if (gameState.mode === 'local2p') {
+    if (gameState.winner) { renderGame(); showGameOver(); inputLocked = false; return; }
+    const nextLabel = seatLabel(gameState.activePlayer);
+    showPassDevice(nextLabel, () => {
+      inputLocked = false;
+      renderGame();
+      showBanner(`TOUR DE ${nextLabel.toUpperCase()}`);
+      SFX.play('turnStart');
+    });
+    return;
+  }
+
   renderGame();
   showBanner(gameState.activePlayer === 'ai' ? "TOUR DE L'IA" : 'VOTRE TOUR');
   SFX.play('turnStart');
@@ -273,47 +319,53 @@ function resolveChoiceFromUI(selection) {
 
 function renderGame() {
   if (!gameState) return;
-  const player = gameState.players.player;
-  const ai = gameState.players.ai;
+  const bottomSeat = humanSeat();
+  const topSeat = otherSeat();
+  const bottom = gameState.players[bottomSeat];
+  const top = gameState.players[topSeat];
 
-  document.getElementById('turn-indicator').textContent =
-    `Tour ${gameState.turnNumber} — ${gameState.activePlayer === 'player' ? 'votre tour' : "tour de l'IA"}`;
+  const turnText = gameState.mode === 'local2p'
+    ? `tour de ${seatLabel(gameState.activePlayer)}`
+    : (gameState.activePlayer === 'player' ? 'votre tour' : "tour de l'IA");
+  document.getElementById('turn-indicator').textContent = `Tour ${gameState.turnNumber} — ${turnText}`;
 
   const phHp = document.getElementById('player-hp');
-  phHp.textContent = `${player.heroHp} / ${player.heroMaxHp} PV`;
-  phHp.classList.toggle('low', player.heroHp <= 10);
+  phHp.textContent = `${bottom.heroHp} / ${bottom.heroMaxHp} PV`;
+  phHp.classList.toggle('low', bottom.heroHp <= 10);
   const aiHp = document.getElementById('ai-hp');
-  aiHp.textContent = `${ai.heroHp} / ${ai.heroMaxHp} PV`;
-  aiHp.classList.toggle('low', ai.heroHp <= 10);
+  aiHp.textContent = `${top.heroHp} / ${top.heroMaxHp} PV`;
+  aiHp.classList.toggle('low', top.heroHp <= 10);
 
-  document.getElementById('player-mana').textContent = `${player.mana} / ${player.maxMana} mana`;
-  document.getElementById('ai-mana').textContent = `${ai.mana} / ${ai.maxMana} mana`;
-  document.getElementById('player-deck-count').textContent = player.deck.length;
-  document.getElementById('ai-deck-count').textContent = ai.deck.length;
-  document.getElementById('ai-hand-count').textContent = ai.hand.length;
+  document.getElementById('player-mana').textContent = `${bottom.mana} / ${bottom.maxMana} mana`;
+  document.getElementById('ai-mana').textContent = `${top.mana} / ${top.maxMana} mana`;
+  document.getElementById('player-deck-count').textContent = bottom.deck.length;
+  document.getElementById('ai-deck-count').textContent = top.deck.length;
+  document.getElementById('ai-hand-count').textContent = top.hand.length;
+  document.getElementById('ai-hero-name').textContent = seatLabel(topSeat);
+  document.getElementById('player-hero-name').textContent = gameState.mode === 'local2p' ? seatLabel(bottomSeat) : 'Vous (PeopleSpheres)';
 
-  const provocateurs = selectedAttackerUid ? getProvocationCards(gameState, 'ai') : [];
+  const provocateurs = selectedAttackerUid ? getProvocationCards(gameState, topSeat) : [];
   const canTargetHero = selectedAttackerUid && provocateurs.length === 0;
   const aiHeroTarget = document.getElementById('ai-hero-target');
   aiHeroTarget.classList.toggle('attackable', !!canTargetHero);
 
-  document.getElementById('ai-board').innerHTML = ai.board.map(c => miniCardHtml(gameState, 'ai', c, {
+  document.getElementById('ai-board').innerHTML = top.board.map(c => miniCardHtml(gameState, topSeat, c, {
     targetable: !!selectedAttackerUid && (provocateurs.length === 0 || provocateurs.some(p => p.uid === c.uid)),
   })).join('') || '<div style="color:var(--text-dim); font-size:12px;">Plateau vide</div>';
 
-  document.getElementById('player-board').innerHTML = player.board.map(c => miniCardHtml(gameState, 'player', c, {
-    selectable: !c.summoningSick && !c.hasAttackedThisTurn && gameState.activePlayer === 'player',
+  document.getElementById('player-board').innerHTML = bottom.board.map(c => miniCardHtml(gameState, bottomSeat, c, {
+    selectable: !c.summoningSick && !c.hasAttackedThisTurn && gameState.activePlayer === bottomSeat,
     selected: c.uid === selectedAttackerUid,
     sick: c.summoningSick,
   })).join('') || '<div style="color:var(--text-dim); font-size:12px;">Plateau vide</div>';
 
-  document.getElementById('player-hand').innerHTML = player.hand.map(c => handCardHtml(gameState, c)).join('');
+  document.getElementById('player-hand').innerHTML = bottom.hand.map(c => handCardHtml(gameState, c, bottomSeat)).join('');
 
   document.getElementById('end-turn-btn').disabled = !canPlayerAct();
   document.getElementById('end-turn-btn').classList.toggle('your-turn', canPlayerAct());
 
-  renderSynergyPanel(player.board);
-  checkSynergyToasts(player.board);
+  renderSynergyPanel(bottom.board);
+  checkSynergyToasts(bottomSeat, bottom.board);
   renderLog();
   renderModals();
 }
@@ -346,7 +398,7 @@ function miniCardHtml(state, ownerId, card, opts) {
     </div>`;
 }
 
-function handCardHtml(state, card) {
+function handCardHtml(state, card, seatId) {
   if (card.isToken) {
     return `
       <div class="hand-card" data-uid="${card.uid}" style="--dcolor:#4fd1c5">
@@ -355,9 +407,10 @@ function handCardHtml(state, card) {
         <div class="hc-ability">Jeton : gagnez 1 mana ce tour-ci.</div>
       </div>`;
   }
-  const cost = computeCost(state, 'player', card, { consume: false });
+  const owner = state.players[seatId];
+  const cost = computeCost(state, seatId, card, { consume: false });
   const isAction = card.cardType === 'ACTION';
-  const affordable = cost <= state.players.player.mana && (isAction || state.players.player.board.length < MAX_BOARD);
+  const affordable = cost <= owner.mana && (isAction || owner.board.length < MAX_BOARD);
   const color = DOMAIN_COLORS[card.domain] || '#666';
   return `
     <div class="hand-card ${rarityClass(card.rarity)} ${affordable ? '' : 'unaffordable'}" data-uid="${card.uid}" style="--dcolor:${color}" title="${escapeAttr(cardAbilityText(card))}">
@@ -535,18 +588,39 @@ function aiAutoMulligan() {
 }
 
 function startMulliganPhase() {
-  aiAutoMulligan();
-  showMulliganModal();
+  if (gameState.mode === 'local2p') {
+    showMulliganModalForSeat('player', 'Joueur 1', () => {
+      showPassDevice('Joueur 2', () => {
+        showMulliganModalForSeat('ai', 'Joueur 2', () => {
+          const firstLabel = seatLabel(gameState.activePlayer);
+          showPassDevice(firstLabel, () => {
+            renderGame();
+            showBanner(`TOUR DE ${firstLabel.toUpperCase()}`);
+            SFX.play('turnStart');
+          });
+        });
+      });
+    });
+  } else {
+    aiAutoMulligan();
+    showMulliganModalForSeat('player', null, () => {
+      renderGame();
+      showBanner('VOTRE TOUR');
+      SFX.play('turnStart');
+    });
+  }
 }
 
-function showMulliganModal() {
+function showMulliganModalForSeat(seatId, label, onDone) {
   mulliganSelected = new Set();
   const root = document.getElementById('modal-root');
-  const hand = gameState.players.player.hand;
+  const hand = gameState.players[seatId].hand;
+  const title = label ? `Mulligan — ${label}` : 'Mulligan — gardez ou changez votre main de départ';
   root.innerHTML = `
     <div class="modal-overlay">
       <div class="modal-box" style="max-width:640px;">
-        <h2>Mulligan — gardez ou changez votre main de départ</h2>
+        <h2>${title}</h2>
+        ${label ? `<p style="color:var(--danger); font-size:12px; font-weight:700;">Seul·e ${label} doit regarder l'écran maintenant.</p>` : ''}
         <p style="color:var(--text-dim); font-size:12px;">Cliquez sur les cartes à remplacer (une seule fois, en tout début de partie).</p>
         <div class="modal-cards" id="mulligan-cards">${hand.map(tinyCardHtml).join('')}</div>
         <div class="modal-actions"><button id="mulligan-confirm" class="primary">Garder cette main</button></div>
@@ -563,13 +637,11 @@ function showMulliganModal() {
   });
   document.getElementById('mulligan-confirm').addEventListener('click', () => {
     if (mulliganSelected.size > 0) {
-      mulligan(gameState, 'player', Array.from(mulliganSelected));
+      mulligan(gameState, seatId, Array.from(mulliganSelected));
       SFX.play('draw');
     }
     document.getElementById('modal-root').innerHTML = '';
-    renderGame();
-    showBanner('VOTRE TOUR');
-    SFX.play('turnStart');
+    onDone();
   });
 }
 
@@ -581,7 +653,7 @@ function statsSummaryHtml(playerId) {
   const bestTier = s.peakSynergyTier[bestDomain] || 0;
   return `
     <div style="flex:1; text-align:left; background:var(--bg-panel-2); border-radius:8px; padding:10px 14px; font-size:12.5px; line-height:1.7;">
-      <div style="font-weight:700; margin-bottom:4px;">${playerId === 'player' ? 'Vous' : "L'IA"}</div>
+      <div style="font-weight:700; margin-bottom:4px;">${seatLabel(playerId)}</div>
       <div>Dégâts infligés : <b>${s.damageDealt}</b></div>
       <div>Dégâts subis : <b>${s.damageTaken}</b></div>
       <div>Soins prodigués : <b>${s.healingDone}</b></div>
@@ -593,29 +665,39 @@ function statsSummaryHtml(playerId) {
 
 function showGameOver() {
   const root = document.getElementById('modal-root');
-  const won = gameState.winner === 'player';
+  const local = gameState.mode === 'local2p';
   const draw = gameState.winner === 'draw';
-  SFX.play(won ? 'win' : draw ? 'turnStart' : 'lose');
-  if (won) { spawnConfetti(90); addBoosters(1); }
-  else if (!draw) shakeScreen(10, 400);
+  const playerWonVsAi = !local && gameState.winner === 'player';
+  const winnerName = draw ? null : seatLabel(gameState.winner);
+
+  SFX.play(draw ? 'turnStart' : (local || playerWonVsAi) ? 'win' : 'lose');
+  if (!draw) { spawnConfetti(90); addBoosters(1); }
+  else if (!local) shakeScreen(10, 400);
+
+  const title = draw ? 'Égalité' : local ? `${winnerName} remporte le duel !` : (playerWonVsAi ? 'Victoire !' : 'Défaite');
+  const subtitle = draw ? 'Les deux héros tombent ensemble.'
+    : local ? 'Belle partie !'
+    : (playerWonVsAi ? 'PeopleSpheres a synchronisé tout le marché SIRH.' : "L'IA a pris le dessus cette fois.");
+
   root.innerHTML = `
     <div class="modal-overlay">
       <div class="modal-box gameover-box" style="max-width:560px;">
-        <h1 class="${draw ? '' : won ? 'win' : 'lose'}">${draw ? 'Égalité' : won ? 'Victoire !' : 'Défaite'}</h1>
-        <p style="color:var(--text-dim);">${won ? 'PeopleSpheres a synchronisé tout le marché SIRH.' : draw ? 'Les deux héros tombent ensemble.' : "L'IA a pris le dessus cette fois."}</p>
-        ${won ? '<p style="color:var(--accent-2); font-weight:700;">🎁 +1 booster gagné !</p>' : ''}
+        <h1 class="${draw ? '' : (local || playerWonVsAi) ? 'win' : 'lose'}">${title}</h1>
+        <p style="color:var(--text-dim);">${subtitle}</p>
+        ${!draw ? '<p style="color:var(--accent-2); font-weight:700;">🎁 +1 booster gagné !</p>' : ''}
         <div style="display:flex; gap:10px; margin:14px 0;">
           ${statsSummaryHtml('player')}
           ${statsSummaryHtml('ai')}
         </div>
         <div class="modal-actions" style="justify-content:center;">
-          <button id="gameover-rematch" class="primary">Nouvelle partie (même deck)</button>
+          <button id="gameover-rematch" class="primary">Nouvelle partie (mêmes decks)</button>
           <button id="gameover-builder">Deck builder</button>
         </div>
       </div>
     </div>`;
   document.getElementById('gameover-rematch').addEventListener('click', () => {
-    startNewGame(lastPlayerDeckList);
+    if (local && lastLocalDecks) startLocalGame(lastLocalDecks[0], lastLocalDecks[1]);
+    else if (lastPlayerDeckList) startNewGame(lastPlayerDeckList);
   });
   document.getElementById('gameover-builder').addEventListener('click', () => showScreen('deckbuilder'));
 }
