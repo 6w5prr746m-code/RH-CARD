@@ -110,6 +110,25 @@ select {
 .domain-tabs button { font-size: 13px; padding: 6px 12px; }
 .domain-tabs button.active { border-color: var(--accent); color: var(--accent); background: #142523; }
 
+.campaign-panel {
+  display: flex; gap: 10px; padding: 10px 20px; overflow-x: auto;
+  border-bottom: 1px solid var(--border); -webkit-overflow-scrolling: touch; scrollbar-width: thin;
+}
+.campaign-panel.hidden { display: none; }
+.campaign-stage {
+  flex: 0 0 auto; width: 150px; padding: 10px; border-radius: 8px;
+  border: 2px solid var(--border); background: var(--bg-panel); cursor: pointer; text-align: left;
+}
+.campaign-stage .cs-num { font-size: 11px; color: var(--text-dim); font-weight: 700; }
+.campaign-stage .cs-name { font-weight: 700; font-size: 13px; margin: 2px 0; }
+.campaign-stage .cs-desc { font-size: 11px; color: var(--text-dim); line-height: 1.3; min-height: 28px; }
+.campaign-stage .cs-reward { font-size: 11px; color: var(--accent-2); font-weight: 700; margin-top: 4px; }
+.campaign-stage.selected { border-color: var(--accent); box-shadow: 0 0 8px rgba(79,209,197,0.5); }
+.campaign-stage.cleared { border-color: var(--accent-2); }
+.campaign-stage.cleared .cs-num::after { content: ' ✓'; }
+.campaign-stage.locked { opacity: 0.45; cursor: not-allowed; }
+.campaign-stage.boss { border-color: var(--danger); }
+
 .builder-body { flex: 1; display: flex; overflow: hidden; }
 
 .pool-grid {

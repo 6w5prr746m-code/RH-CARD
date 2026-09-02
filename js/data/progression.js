@@ -9,6 +9,7 @@ function defaultProgression() {
     stats: { gamesPlayed: 0, gamesWon: 0, gamesLost: 0, draws: 0, localGames: 0, boostersOpened: 0, currentWinStreak: 0, bestWinStreak: 0 },
     streak: { count: 0, lastClaimDate: null },
     unlocked: [], // achievement ids
+    campaign: { unlockedIndex: 0, cleared: [] }, // cleared = stage ids first-cleared (reward-once)
   };
 }
 
@@ -23,6 +24,7 @@ function loadProgression() {
       progressionState = Object.assign(defaultProgression(), parsed, {
         stats: Object.assign(defaultProgression().stats, parsed.stats),
         streak: Object.assign(defaultProgression().streak, parsed.streak),
+        campaign: Object.assign(defaultProgression().campaign, parsed.campaign),
       });
       return progressionState;
     }
@@ -131,4 +133,34 @@ function recordBoosterOpened() {
   p.stats.boostersOpened++;
   saveProgression();
   return checkAchievements();
+}
+
+// ---------------------------------------------------------------- campaign
+
+function getCampaignProgress() {
+  return loadProgression().campaign;
+}
+
+// Called once per finished campaign game. Only a win moves progress: the
+// stage's reward is granted the first time it's cleared (replays don't
+// re-grant it), and the next stage unlocks only if this was the current
+// frontier stage.
+function recordCampaignResult(stageIndex, won) {
+  const stage = CAMPAIGN_STAGES[stageIndex];
+  const result = { rewardBoosters: 0, newlyUnlocked: false, campaignComplete: false };
+  if (!won || !stage) return result;
+  const p = loadProgression();
+  const c = p.campaign;
+  if (!c.cleared.includes(stage.id)) {
+    c.cleared.push(stage.id);
+    result.rewardBoosters = stage.reward;
+    addBoosters(stage.reward);
+  }
+  if (stageIndex === c.unlockedIndex && c.unlockedIndex < CAMPAIGN_STAGES.length - 1) {
+    c.unlockedIndex++;
+    result.newlyUnlocked = true;
+  }
+  result.campaignComplete = c.cleared.length >= CAMPAIGN_STAGES.length;
+  saveProgression();
+  return result;
 }

@@ -16,9 +16,7 @@ function getAiDifficultySettings() {
   return AI_DIFFICULTY_SETTINGS[AI_DIFFICULTY] || AI_DIFFICULTY_SETTINGS.normal;
 }
 
-function buildAiDeck(difficulty) {
-  const settings = AI_DIFFICULTY_SETTINGS[difficulty] || getAiDifficultySettings();
-  const domains = shuffle(SYNERGY_DOMAINS).slice(0, settings.domainsCount);
+function buildDeckForDomains(domains, settings) {
   const deckList = settings.includeLegendary ? ['peoplespheres'] : [];
   for (const d of domains) {
     const pool = CARD_POOL.filter(c => c.domain === d);
@@ -42,6 +40,19 @@ function buildAiDeck(difficulty) {
     if (countInDeck < max) deckList.push(pick.id);
   }
   return deckList;
+}
+
+function buildAiDeck(difficulty) {
+  const settings = AI_DIFFICULTY_SETTINGS[difficulty] || getAiDifficultySettings();
+  const domains = shuffle(SYNERGY_DOMAINS).slice(0, settings.domainsCount);
+  return buildDeckForDomains(domains, settings);
+}
+
+// Campaign stages fix their own domains (see js/data/campaign.js) instead of
+// a random subset, so the same stage always plays with the same identity.
+function buildCampaignDeck(stage) {
+  const settings = AI_DIFFICULTY_SETTINGS[stage.difficulty] || AI_DIFFICULTY_SETTINGS.normal;
+  return buildDeckForDomains(stage.domains, settings);
 }
 
 function aiPickBuffTarget(targets) {

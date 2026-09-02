@@ -577,7 +577,9 @@ function showPassDevice(label, onContinue) {
 }
 
 function seatLabel(seatId) {
-  return gameState.mode === 'local2p' ? (seatId === 'player' ? 'Joueur 1' : 'Joueur 2') : (seatId === 'player' ? 'Vous' : "L'IA");
+  if (gameState.mode === 'local2p') return seatId === 'player' ? 'Joueur 1' : 'Joueur 2';
+  if (seatId === 'ai' && gameState.campaignStageIndex != null) return CAMPAIGN_STAGES[gameState.campaignStageIndex].name;
+  return seatId === 'player' ? 'Vous' : "L'IA";
 }
 
 async function handleEndTurn() {
@@ -1055,6 +1057,18 @@ function statsSummaryHtml(playerId) {
     </div>`;
 }
 
+function campaignResultHtml(result) {
+  if (!result) return '';
+  if (result.campaignComplete) {
+    return '<p style="color:var(--accent-2); font-weight:700;">🏆 Campagne terminée ! Vous avez repris tout le marché SIRH.</p>';
+  }
+  if (result.rewardBoosters > 0) {
+    const unlockNote = result.newlyUnlocked ? ' Étape suivante débloquée !' : '';
+    return `<p style="color:var(--accent-2); font-weight:700;">🎖 Étape remportée — +${result.rewardBoosters} booster${result.rewardBoosters > 1 ? 's' : ''} de campagne.${unlockNote}</p>`;
+  }
+  return '';
+}
+
 function showGameOver() {
   clearSavedGameState();
   const root = document.getElementById('modal-root');
@@ -1069,6 +1083,9 @@ function showGameOver() {
 
   const resultKey = draw ? 'draw' : (playerWonVsAi ? 'win' : 'loss');
   const newAchievements = recordGameResult({ mode: gameState.mode, result: resultKey });
+
+  const isCampaign = gameState.campaignStageIndex != null;
+  const campaignResult = isCampaign ? recordCampaignResult(gameState.campaignStageIndex, playerWonVsAi) : null;
 
   const title = draw ? 'Égalité' : local ? `${winnerName} remporte le duel !` : (playerWonVsAi ? 'Victoire !' : 'Défaite');
   const subtitle = draw ? 'Les deux héros tombent ensemble.'
@@ -1094,6 +1111,7 @@ function showGameOver() {
         <h1 class="${titleClass}">${title}</h1>
         <p style="color:var(--text-dim);">${subtitle}</p>
         ${!draw ? '<p style="color:var(--accent-2); font-weight:700;">🎁 +1 booster gagné !</p>' : ''}
+        ${campaignResultHtml(campaignResult)}
         ${mvpCard ? `
         <div class="go-mvp" style="--dcolor:${DOMAIN_COLORS[mvpCard.domain] || '#666'}">
           <div class="go-mvp-art">${cardArtMarkup(mvpCard)}</div>
@@ -1110,15 +1128,23 @@ function showGameOver() {
         </div>
         <div class="modal-actions" style="justify-content:center; flex-wrap:wrap;">
           <button id="gameover-share">📸 Télécharger l'image</button>
-          <button id="gameover-rematch" class="primary">Nouvelle partie (mêmes decks)</button>
+          ${isCampaign && campaignResult.newlyUnlocked ? '<button id="gameover-next-stage" class="primary">Étape suivante →</button>' : ''}
+          <button id="gameover-rematch" ${isCampaign && campaignResult.newlyUnlocked ? '' : 'class="primary"'}>${isCampaign ? 'Rejouer cette étape' : 'Nouvelle partie (mêmes decks)'}</button>
           <button id="gameover-builder">Deck builder</button>
         </div>
       </div>
     </div>`;
   document.getElementById('gameover-rematch').addEventListener('click', () => {
-    if (local && lastLocalDecks) startLocalGame(lastLocalDecks[0], lastLocalDecks[1]);
+    if (isCampaign && lastPlayerDeckList) startCampaignGame(lastPlayerDeckList, gameState.campaignStageIndex);
+    else if (local && lastLocalDecks) startLocalGame(lastLocalDecks[0], lastLocalDecks[1]);
     else if (lastPlayerDeckList) startNewGame(lastPlayerDeckList);
   });
+  const nextStageBtn = document.getElementById('gameover-next-stage');
+  if (nextStageBtn) {
+    nextStageBtn.addEventListener('click', () => {
+      if (lastPlayerDeckList) startCampaignGame(lastPlayerDeckList, gameState.campaignStageIndex + 1);
+    });
+  }
   document.getElementById('gameover-builder').addEventListener('click', () => showScreen('deckbuilder'));
   document.getElementById('gameover-share').addEventListener('click', (e) => {
     SFX.play('click');

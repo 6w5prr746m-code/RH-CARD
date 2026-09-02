@@ -22,6 +22,7 @@
     <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
       <div class="domain-tabs" style="padding:0; border:none;">
         <button id="mode-vsai" class="active">Solo vs IA</button>
+        <button id="mode-campaign">Campagne</button>
         <button id="mode-local2p">Duel local (2 joueurs)</button>
       </div>
       <label id="ai-difficulty-label" style="font-size:12px; color:var(--text-dim);">IA :
@@ -40,6 +41,7 @@
       <button id="btn-clear-deck">Vider</button>
     </div>
   </header>
+  <div class="campaign-panel hidden" id="campaign-panel"></div>
   <div class="domain-tabs" id="domain-tabs"></div>
   <div class="builder-body">
     <div class="pool-grid" id="pool-grid"></div>
@@ -126,6 +128,7 @@
 <div id="toast" class="hidden" style="position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:#2c3145; color:#e8e9f0; padding:10px 18px; border-radius:8px; border:1px solid #e0556f; z-index:210; font-size:13px;"></div>
 
 <script src="js/data/cards.js"></script>
+<script src="js/data/campaign.js"></script>
 <script src="js/data/describe.js"></script>
 <script src="js/data/cardart.js"></script>
 <script src="js/data/collection.js"></script>

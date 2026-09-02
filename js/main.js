@@ -3,8 +3,9 @@
 let lastPlayerDeckList = null;
 let lastLocalDecks = null; // [p1DeckList, p2DeckList], for local 2p rematch
 
-let appMode = 'vsAI'; // 'vsAI' | 'local2p'
+let appMode = 'vsAI'; // 'vsAI' | 'local2p' | 'campaign'
 let localP1DeckList = null; // set once Player 1 confirms their deck in local2p flow
+let selectedCampaignStageIndex = 0;
 
 function showScreen(name) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
@@ -22,7 +23,13 @@ function setAppMode(mode) {
   builderState.counts = {};
   document.getElementById('mode-vsai').classList.toggle('active', mode === 'vsAI');
   document.getElementById('mode-local2p').classList.toggle('active', mode === 'local2p');
+  document.getElementById('mode-campaign').classList.toggle('active', mode === 'campaign');
   document.getElementById('ai-difficulty-label').style.display = mode === 'vsAI' ? '' : 'none';
+  document.getElementById('campaign-panel').classList.toggle('hidden', mode !== 'campaign');
+  if (mode === 'campaign') {
+    selectedCampaignStageIndex = getCampaignProgress().unlockedIndex;
+    renderCampaignPanel();
+  }
   renderPool();
   renderDeckPanel();
   updateDeckBuilderHeaderForMode();
@@ -34,6 +41,10 @@ function updateDeckBuilderHeaderForMode() {
   if (appMode === 'vsAI') {
     sub.textContent = 'Sélectionnez 25 à 30 cartes parmi les 91 éditeurs du marché SIRH.';
     startBtn.textContent = 'Lancer la partie';
+  } else if (appMode === 'campaign') {
+    const stage = CAMPAIGN_STAGES[selectedCampaignStageIndex];
+    sub.textContent = `Campagne — Étape ${selectedCampaignStageIndex + 1}/${CAMPAIGN_STAGES.length} : ${stage.name}. Construisez votre deck puis défiez-les.`;
+    startBtn.textContent = `Défier ${stage.name}`;
   } else if (localP1DeckList === null) {
     sub.textContent = 'Duel local — construisez le deck du Joueur 1.';
     startBtn.textContent = 'Deck Joueur 1 prêt →';
@@ -41,6 +52,35 @@ function updateDeckBuilderHeaderForMode() {
     sub.textContent = 'Duel local — construisez le deck du Joueur 2.';
     startBtn.textContent = 'Lancer le duel';
   }
+}
+
+function renderCampaignPanel() {
+  const progress = getCampaignProgress();
+  const panel = document.getElementById('campaign-panel');
+  panel.innerHTML = CAMPAIGN_STAGES.map((stage, i) => {
+    const locked = i > progress.unlockedIndex;
+    const cleared = progress.cleared.includes(stage.id);
+    const classes = ['campaign-stage'];
+    if (stage.boss) classes.push('boss');
+    if (locked) classes.push('locked');
+    if (cleared) classes.push('cleared');
+    if (i === selectedCampaignStageIndex) classes.push('selected');
+    return `
+      <button class="${classes.join(' ')}" data-stage-index="${i}" ${locked ? 'disabled' : ''}>
+        <div class="cs-num">Étape ${i + 1}</div>
+        <div class="cs-name">${locked ? '🔒 ???' : stage.name}</div>
+        <div class="cs-desc">${locked ? 'Terminez l\'étape précédente pour débloquer.' : stage.desc}</div>
+        ${locked ? '' : `<div class="cs-reward">🎁 +${stage.reward} booster${stage.reward > 1 ? 's' : ''}</div>`}
+      </button>`;
+  }).join('');
+  panel.querySelectorAll('.campaign-stage:not(.locked)').forEach(el => {
+    el.addEventListener('click', () => {
+      SFX.play('tabSwitch');
+      selectedCampaignStageIndex = parseInt(el.dataset.stageIndex, 10);
+      renderCampaignPanel();
+      updateDeckBuilderHeaderForMode();
+    });
+  });
 }
 
 function handleStartGameClick() {
@@ -51,6 +91,11 @@ function handleStartGameClick() {
 
   if (appMode === 'vsAI') {
     startNewGame(list);
+    return;
+  }
+
+  if (appMode === 'campaign') {
+    startCampaignGame(list, selectedCampaignStageIndex);
     return;
   }
 
@@ -76,6 +121,24 @@ function startNewGame(playerDeckList) {
   const aiDeckList = buildAiDeck();
   gameState = createGameState(playerDeckList, aiDeckList);
   gameState.mode = 'vsAI';
+  selectedAttackerUid = null;
+  inputLocked = false;
+  resetFxState();
+  showScreen('game');
+  renderGame();
+  startMulliganPhase();
+}
+
+function startCampaignGame(playerDeckList, stageIndex) {
+  clearSavedGameState();
+  const stage = CAMPAIGN_STAGES[stageIndex];
+  lastPlayerDeckList = playerDeckList.slice();
+  lastLocalDecks = null;
+  setAiDifficulty(stage.difficulty);
+  const aiDeckList = buildCampaignDeck(stage);
+  gameState = createGameState(playerDeckList, aiDeckList);
+  gameState.mode = 'vsAI';
+  gameState.campaignStageIndex = stageIndex;
   selectedAttackerUid = null;
   inputLocked = false;
   resetFxState();
@@ -137,6 +200,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   document.getElementById('mode-vsai').addEventListener('click', () => { SFX.play('tabSwitch'); setAppMode('vsAI'); });
   document.getElementById('mode-local2p').addEventListener('click', () => { SFX.play('tabSwitch'); setAppMode('local2p'); });
+  document.getElementById('mode-campaign').addEventListener('click', () => { SFX.play('tabSwitch'); setAppMode('campaign'); });
 
   document.getElementById('btn-help-builder').addEventListener('click', () => showTutorialModal());
   document.getElementById('btn-help-game').addEventListener('click', () => showTutorialModal());
