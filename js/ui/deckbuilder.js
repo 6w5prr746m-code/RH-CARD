@@ -113,6 +113,7 @@ function initDeckBuilder() {
   document.getElementById('btn-start-game').addEventListener('click', handleStartGameClick);
   document.getElementById('btn-options-builder').addEventListener('click', showOptionsModal);
   document.getElementById('btn-achievements').addEventListener('click', showAchievementsModal);
+  document.getElementById('btn-collection').addEventListener('click', showCollectionBinder);
   document.getElementById('btn-theme-toggle-builder').addEventListener('click', toggleThemeQuick);
   document.getElementById('btn-open-booster').addEventListener('click', handleOpenBooster);
 
@@ -267,6 +268,84 @@ function cardTileHtml(card) {
         ${card.pointFaible ? '<div class="cf-pf">⚠ Point Faible</div>' : ''}
       </div>
     </div>`;
+}
+
+// ---------------------------------------------------------------- collection binder
+// A read-only browse-all-cards view, separate from deck building: reuses the
+// same card-tile visuals as the pool grid but never touches builderState, so
+// opening it mid-deckbuild can't accidentally change what's selected.
+
+let binderFilter = 'ALL';
+
+function binderTileHtml(card) {
+  const owned = ownedCount(card.id);
+  if (owned === 0) {
+    return `
+      <div class="card-tile locked" style="--dcolor:#444">
+        <div class="lock-icon">🔒</div>
+        <div class="name">${card.name}</div>
+        <div class="stars">${rarityLabel(card.rarity)} · ${DOMAIN_LABELS[card.domain]}</div>
+        <div class="ability">Non débloquée.</div>
+      </div>`;
+  }
+  const color = DOMAIN_COLORS[card.domain] || '#666';
+  const isAction = card.cardType === 'ACTION';
+  return `
+    <div class="card-tile card-face ${rarityClass(card.rarity)}" style="--dcolor:${color}">
+      <div class="card-art">${cardArtMarkup(card)}</div>
+      <div class="card-art-scrim"></div>
+      <div class="count-badge">×${owned}</div>
+      <div class="cf-top">
+        <span class="cf-name"><span class="domain-icon">${DOMAIN_ICONS[card.domain] || ''}</span>${card.name}</span>
+        <span class="cf-cost">${card.cost}</span>
+      </div>
+      <div class="cf-bottom">
+        <div class="cf-meta">${rarityLabel(card.rarity)} · ${DOMAIN_LABELS[card.domain]}${isAction ? ' · ⚡' : ''}</div>
+        ${isAction ? '' : `<div class="cf-stats"><span class="mc-atk">${card.atk}</span><span class="mc-def">${card.def}</span><span class="mc-hp">${card.hp}</span></div>`}
+        ${card.pointFaible ? '<div class="cf-pf">⚠ Point Faible</div>' : ''}
+      </div>
+    </div>`;
+}
+
+function binderPoolForFilter() {
+  if (binderFilter === 'ALL') return ALL_CARDS;
+  if (binderFilter === 'LEGEND') return [LEGENDARY_CARD];
+  return CARD_POOL.filter(c => c.domain === binderFilter);
+}
+
+function showCollectionBinder() {
+  SFX.play('click');
+  binderFilter = 'ALL';
+  renderCollectionBinder();
+}
+
+function renderCollectionBinder() {
+  const root = document.getElementById('modal-root');
+  const owned = ownedUniqueCardCount();
+  const total = ALL_CARDS.length;
+  root.innerHTML = `
+    <div class="modal-overlay" id="binder-overlay">
+      <div class="modal-box binder-box">
+        <h2>📖 Collection (${owned}/${total})</h2>
+        <div class="domain-tabs" id="binder-tabs" style="padding:0 0 10px;"></div>
+        <div class="binder-grid" id="binder-grid"></div>
+        <div class="modal-actions"><button id="binder-close" class="primary">Fermer</button></div>
+      </div>
+    </div>`;
+  const tabsEl = document.getElementById('binder-tabs');
+  tabsEl.innerHTML = DOMAIN_TAB_ORDER.map(([key, label]) =>
+    `<button data-filter="${key}" class="${binderFilter === key ? 'active' : ''}">${label}</button>`
+  ).join('');
+  tabsEl.querySelectorAll('button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      SFX.play('tabSwitch');
+      binderFilter = btn.dataset.filter;
+      renderCollectionBinder();
+    });
+  });
+  document.getElementById('binder-grid').innerHTML = binderPoolForFilter().map(binderTileHtml).join('');
+  document.getElementById('binder-overlay').addEventListener('click', (e) => { if (e.target.id === 'binder-overlay') root.innerHTML = ''; });
+  document.getElementById('binder-close').addEventListener('click', () => { root.innerHTML = ''; });
 }
 
 function renderDeckPanel() {

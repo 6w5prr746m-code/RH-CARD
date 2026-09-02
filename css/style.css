@@ -509,6 +509,16 @@ body[data-arena="grove"] #screen-game {
 }
 
 .achv-list { display: flex; flex-direction: column; gap: 8px; max-height: 60vh; overflow-y: auto; }
+
+.binder-box { max-width: 900px; }
+.binder-box .domain-tabs { flex-wrap: wrap; }
+.binder-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px;
+  max-height: 56vh; overflow-y: auto; padding: 4px 2px;
+}
+@media (max-width: 600px) {
+  .binder-grid { grid-template-columns: repeat(auto-fill, minmax(108px, 1fr)); max-height: 50vh; }
+}
 .achv-row {
   display: flex; align-items: center; gap: 12px; padding: 10px 12px;
   background: var(--bg-panel-2); border-radius: 8px; border: 1px solid var(--border); opacity: 0.55;
