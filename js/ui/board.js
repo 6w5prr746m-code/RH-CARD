@@ -354,6 +354,10 @@ function showOptionsModal() {
           <button id="opt-mute-toggle" class="icon-btn">${SFX.isMuted() ? '🔇 Coupé' : '🔊 Activé'}</button>
         </div>
         <div class="options-row">
+          <span>Musique d'ambiance</span>
+          <button id="opt-music-toggle" class="icon-btn">${MUSIC.isMuted() ? '🔇 Coupée' : '🎵 Activée'}</button>
+        </div>
+        <div class="options-row">
           <span>Vitesse des animations</span>
           <select id="opt-anim-speed">
             <option value="instant">Instantané</option>
@@ -386,6 +390,10 @@ function showOptionsModal() {
     const muted = SFX.toggleMute();
     e.currentTarget.textContent = muted ? '🔇 Coupé' : '🔊 Activé';
     if (!muted) SFX.play('click');
+  });
+  document.getElementById('opt-music-toggle').addEventListener('click', (e) => {
+    const muted = MUSIC.toggleMute();
+    e.currentTarget.textContent = muted ? '🔇 Coupée' : '🎵 Activée';
   });
   document.getElementById('opt-anim-speed').addEventListener('change', (e) => setAnimSpeed(e.target.value));
   document.getElementById('opt-theme').addEventListener('change', (e) => applyTheme(e.target.value));

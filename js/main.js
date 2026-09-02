@@ -216,6 +216,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   document.addEventListener('click', function unlockAudioOnce() {
     SFX.unlock();
+    MUSIC.start();
     document.removeEventListener('click', unlockAudioOnce);
   }, { once: true });
 });
