@@ -317,6 +317,28 @@ function applyArena(arena) {
   localStorage.setItem(ARENA_KEY, currentArena);
 }
 
+// Injects a fixed set of drifting glow motes once — pure CSS animation from
+// then on (see @keyframes moteFloat), so this never re-runs per render.
+function initArenaMotes() {
+  const root = document.getElementById('arena-motes');
+  if (!root) return;
+  const COUNT = 20;
+  for (let i = 0; i < COUNT; i++) {
+    const el = document.createElement('div');
+    el.className = 'mote';
+    const size = 3 + Math.random() * 7;
+    const duration = 16 + Math.random() * 18;
+    el.style.left = `${Math.random() * 100}%`;
+    el.style.width = `${size}px`;
+    el.style.height = `${size}px`;
+    el.style.setProperty('--mote-o', (0.25 + Math.random() * 0.35).toFixed(2));
+    el.style.setProperty('--drift', `${(Math.random() * 80 - 40).toFixed(0)}px`);
+    el.style.animationDuration = `${duration}s`;
+    el.style.animationDelay = `-${(Math.random() * duration).toFixed(1)}s`;
+    root.appendChild(el);
+  }
+}
+
 // ---------------------------------------------------------------- options modal
 
 function showOptionsModal() {
@@ -970,12 +992,24 @@ function showMulliganModalForSeat(seatId, label, onDone) {
   });
 }
 
-function statsSummaryHtml(playerId) {
+function computeMvp(playerId) {
   const s = gameState.stats[playerId];
   const mvpEntry = Object.entries(s.damageByCard).sort((a, b) => b[1] - a[1])[0];
-  const mvpName = mvpEntry ? (CARDS_BY_ID[mvpEntry[0]] ? CARDS_BY_ID[mvpEntry[0]].name : mvpEntry[0]) : '—';
-  const bestDomain = SYNERGY_DOMAINS.reduce((best, d) => (s.peakSynergyTier[d] || 0) > (s.peakSynergyTier[best] || 0) ? d : best, SYNERGY_DOMAINS[0]);
-  const bestTier = s.peakSynergyTier[bestDomain] || 0;
+  if (!mvpEntry) return null;
+  const card = CARDS_BY_ID[mvpEntry[0]];
+  return { id: mvpEntry[0], name: card ? card.name : mvpEntry[0], damage: mvpEntry[1] };
+}
+
+function computeBestDomain(playerId) {
+  const s = gameState.stats[playerId];
+  const domain = SYNERGY_DOMAINS.reduce((best, d) => (s.peakSynergyTier[d] || 0) > (s.peakSynergyTier[best] || 0) ? d : best, SYNERGY_DOMAINS[0]);
+  return { domain, tier: s.peakSynergyTier[domain] || 0 };
+}
+
+function statsSummaryHtml(playerId) {
+  const s = gameState.stats[playerId];
+  const mvp = computeMvp(playerId);
+  const best = computeBestDomain(playerId);
   return `
     <div style="flex:1; text-align:left; background:var(--bg-panel-2); border-radius:8px; padding:10px 14px; font-size:12.5px; line-height:1.7;">
       <div style="font-weight:700; margin-bottom:4px;">${seatLabel(playerId)}</div>
@@ -983,8 +1017,8 @@ function statsSummaryHtml(playerId) {
       <div>Dégâts subis : <b>${s.damageTaken}</b></div>
       <div>Soins prodigués : <b>${s.healingDone}</b></div>
       <div>Cartes jouées : <b>${s.cardsPlayed}</b></div>
-      <div>Meilleure synergie : <b>${bestTier > 0 ? `${DOMAIN_LABELS[bestDomain]} palier ${bestTier}` : '—'}</b></div>
-      <div>Carte MVP : <b>${mvpName}</b>${mvpEntry ? ` (${mvpEntry[1]} dégâts)` : ''}</div>
+      <div>Meilleure synergie : <b>${best.tier > 0 ? `${DOMAIN_LABELS[best.domain]} palier ${best.tier}` : '—'}</b></div>
+      <div>Carte MVP : <b>${mvp ? mvp.name : '—'}</b>${mvp ? ` (${mvp.damage} dégâts)` : ''}</div>
     </div>`;
 }
 
@@ -1000,22 +1034,49 @@ function showGameOver() {
   if (!draw) { spawnConfetti(90); addBoosters(1); }
   else if (!local) shakeScreen(10, 400);
 
+  const resultKey = draw ? 'draw' : (playerWonVsAi ? 'win' : 'loss');
+  const newAchievements = recordGameResult({ mode: gameState.mode, result: resultKey });
+
   const title = draw ? 'Égalité' : local ? `${winnerName} remporte le duel !` : (playerWonVsAi ? 'Victoire !' : 'Défaite');
   const subtitle = draw ? 'Les deux héros tombent ensemble.'
     : local ? 'Belle partie !'
     : (playerWonVsAi ? 'PeopleSpheres a synchronisé tout le marché SIRH.' : "L'IA a pris le dessus cette fois.");
+  const titleClass = draw ? 'draw' : (local || playerWonVsAi) ? 'win' : 'lose';
+  const cardResult = titleClass === 'lose' ? 'loss' : titleClass;
+
+  // Headline whichever seat actually won (for local2p) — 'player' otherwise.
+  const heroSeat = (!draw && local) ? gameState.winner : 'player';
+  const mvp = computeMvp(heroSeat);
+  const mvpCard = mvp ? CARDS_BY_ID[mvp.id] : null;
+  const heroStats = gameState.stats[heroSeat];
+  const shareChips = [
+    { label: 'DÉGÂTS INFLIGÉS', value: String(heroStats.damageDealt) },
+    { label: 'CARTES JOUÉES', value: String(heroStats.cardsPlayed) },
+    { label: 'TOUR FINAL', value: String(gameState.turnNumber) },
+  ];
 
   root.innerHTML = `
     <div class="modal-overlay">
-      <div class="modal-box gameover-box" style="max-width:560px;">
-        <h1 class="${draw ? '' : (local || playerWonVsAi) ? 'win' : 'lose'}">${title}</h1>
+      <div class="modal-box gameover-box" data-result="${cardResult}" style="max-width:560px;">
+        <h1 class="${titleClass}">${title}</h1>
         <p style="color:var(--text-dim);">${subtitle}</p>
         ${!draw ? '<p style="color:var(--accent-2); font-weight:700;">🎁 +1 booster gagné !</p>' : ''}
+        ${mvpCard ? `
+        <div class="go-mvp" style="--dcolor:${DOMAIN_COLORS[mvpCard.domain] || '#666'}">
+          <div class="go-mvp-art">${cardArtMarkup(mvpCard)}</div>
+          <div class="go-mvp-label">Carte MVP</div>
+          <div class="go-mvp-name">${mvpCard.name} <span style="color:var(--text-dim); font-weight:600; font-size:13px;">(${mvp.damage} dégâts)</span></div>
+        </div>` : ''}
+        <div class="go-chips">
+          ${shareChips.map(c => `<div class="go-chip"><div class="go-chip-value">${c.value}</div><div class="go-chip-label">${c.label}</div></div>`).join('')}
+        </div>
+        ${newAchievements.length ? `<div class="go-achievement">🏆 ${newAchievements[0].label}${newAchievements.length > 1 ? ` (+${newAchievements.length - 1} autre${newAchievements.length > 2 ? 's' : ''})` : ''}</div>` : ''}
         <div style="display:flex; gap:10px; margin:14px 0;">
           ${statsSummaryHtml('player')}
           ${statsSummaryHtml('ai')}
         </div>
-        <div class="modal-actions" style="justify-content:center;">
+        <div class="modal-actions" style="justify-content:center; flex-wrap:wrap;">
+          <button id="gameover-share">📸 Télécharger l'image</button>
           <button id="gameover-rematch" class="primary">Nouvelle partie (mêmes decks)</button>
           <button id="gameover-builder">Deck builder</button>
         </div>
@@ -1026,4 +1087,15 @@ function showGameOver() {
     else if (lastPlayerDeckList) startNewGame(lastPlayerDeckList);
   });
   document.getElementById('gameover-builder').addEventListener('click', () => showScreen('deckbuilder'));
+  document.getElementById('gameover-share').addEventListener('click', (e) => {
+    SFX.play('click');
+    downloadShareCard({
+      result: cardResult,
+      title,
+      subtitle,
+      mvpCardId: mvp ? mvp.id : null,
+      chips: shareChips,
+      achievementLabel: newAchievements.length ? newAchievements[0].label : null,
+    }, e.currentTarget);
+  });
 }

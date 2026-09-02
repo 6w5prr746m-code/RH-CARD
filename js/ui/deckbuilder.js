@@ -77,6 +77,7 @@ function initDeckBuilder() {
   });
   document.getElementById('btn-start-game').addEventListener('click', handleStartGameClick);
   document.getElementById('btn-options-builder').addEventListener('click', showOptionsModal);
+  document.getElementById('btn-achievements').addEventListener('click', showAchievementsModal);
   document.getElementById('btn-theme-toggle-builder').addEventListener('click', toggleThemeQuick);
   document.getElementById('btn-open-booster').addEventListener('click', handleOpenBooster);
 
@@ -132,6 +133,44 @@ function renderBoosterCount() {
   const btn = document.getElementById('btn-open-booster');
   btn.textContent = `🎁 Ouvrir un booster (${collectionState.boosters})`;
   btn.disabled = collectionState.boosters <= 0;
+  renderCollectionProgress();
+}
+
+// Auto-claims today's login bonus (if not already claimed) and celebrates it
+// with a small modal — skipped if another modal (resume-game, tutorial) is
+// already showing, same guard pattern as offerTutorialIfFirstVisit.
+function offerDailyBonusIfAny() {
+  const root = document.getElementById('modal-root');
+  if (root.innerHTML.trim() !== '') return;
+  const bonus = claimDailyBonusIfDue();
+  if (!bonus) return;
+
+  root.innerHTML = `
+    <div class="modal-overlay">
+      <div class="modal-box" style="max-width:380px; text-align:center;">
+        <h2>🔥 Bonus quotidien</h2>
+        <p style="font-size:15px;">${bonus.streak} jour${bonus.streak > 1 ? 's' : ''} de suite !${bonus.milestone ? ' Palier de 5 jours atteint 🎉' : ''}</p>
+        <p style="color:var(--accent-2); font-weight:800; font-size:20px;">+${bonus.boosters} booster${bonus.boosters > 1 ? 's' : ''} 🎁</p>
+        <div class="modal-actions" style="justify-content:center;"><button id="daily-bonus-close" class="primary">Récupérer</button></div>
+      </div>
+    </div>`;
+  spawnConfetti(40);
+  SFX.play('legendary');
+  document.getElementById('daily-bonus-close').addEventListener('click', () => {
+    SFX.play('click');
+    root.innerHTML = '';
+    renderBoosterCount();
+  });
+}
+
+function renderCollectionProgress() {
+  const owned = ownedUniqueCardCount();
+  const total = ALL_CARDS.length;
+  const pct = Math.round((owned / total) * 100);
+  document.getElementById('collection-progress-fill').style.width = `${pct}%`;
+  document.getElementById('collection-progress-label').textContent = `${owned} / ${total} cartes`;
+  const streak = loadProgression().streak.count;
+  document.getElementById('streak-label').textContent = streak > 1 ? `🔥 ${streak} jours` : '';
 }
 
 function renderDomainTabs() {
@@ -241,10 +280,11 @@ function handleOpenBooster() {
   const picks = openBooster();
   if (!picks) return;
   SFX.play('cardPlay');
-  showBoosterModal(picks);
+  const newAchievements = recordBoosterOpened();
+  showBoosterModal(picks, newAchievements);
 }
 
-function showBoosterModal(cards) {
+function showBoosterModal(cards, newAchievements) {
   const root = document.getElementById('modal-root');
   root.innerHTML = `
     <div class="modal-overlay">
@@ -268,6 +308,14 @@ function showBoosterModal(cards) {
       if (card.rarity === 3) spawnConfetti(25);
     }, i * 350);
   });
+  if (newAchievements && newAchievements.length) {
+    newAchievements.forEach((a, i) => {
+      setTimeout(() => {
+        SFX.play('legendary');
+        showBanner(`🏆 Succès débloqué : ${a.label} (+${a.boosters} 🎁)`, { epic: true, duration: 2200 });
+      }, cards.length * 350 + 400 + i * 1400);
+    });
+  }
   document.getElementById('booster-continue').addEventListener('click', () => {
     SFX.play('click');
     document.getElementById('modal-root').innerHTML = '';
@@ -284,4 +332,34 @@ function removeCardFromDeck(cardId) {
   else builderState.counts[cardId] = count - 1;
   renderPool();
   renderDeckPanel();
+}
+
+// ---------------------------------------------------------------- achievements modal
+
+function showAchievementsModal() {
+  SFX.play('click');
+  const p = loadProgression();
+  const root = document.getElementById('modal-root');
+  const rows = ACHIEVEMENTS.map(a => {
+    const unlocked = p.unlocked.includes(a.id);
+    return `
+      <div class="achv-row ${unlocked ? 'unlocked' : ''}">
+        <div class="achv-icon">${unlocked ? '🏆' : '🔒'}</div>
+        <div class="achv-body">
+          <div class="achv-label">${a.label}</div>
+          <div class="achv-desc">${a.desc}</div>
+        </div>
+        <div class="achv-reward">+${a.boosters} 🎁</div>
+      </div>`;
+  }).join('');
+  root.innerHTML = `
+    <div class="modal-overlay" id="achv-overlay">
+      <div class="modal-box" style="max-width:460px;">
+        <h2>🏆 Succès (${p.unlocked.length}/${ACHIEVEMENTS.length})</h2>
+        <div class="achv-list">${rows}</div>
+        <div class="modal-actions"><button id="achv-close" class="primary">Fermer</button></div>
+      </div>
+    </div>`;
+  document.getElementById('achv-overlay').addEventListener('click', (e) => { if (e.target.id === 'achv-overlay') root.innerHTML = ''; });
+  document.getElementById('achv-close').addEventListener('click', () => { root.innerHTML = ''; });
 }

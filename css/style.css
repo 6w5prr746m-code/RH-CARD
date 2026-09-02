@@ -95,6 +95,11 @@ select {
 #screen-deckbuilder header h1 { font-size: 18px; margin: 0; }
 #screen-deckbuilder header .sub { color: var(--text-dim); font-size: 13px; }
 
+.collection-progress { display: flex; align-items: center; gap: 8px; margin-top: 6px; font-size: 11.5px; color: var(--text-dim); }
+.collection-progress-bar { width: 120px; height: 6px; border-radius: 3px; background: var(--bg-panel-2); overflow: hidden; }
+.collection-progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent-2)); border-radius: 3px; transition: width 0.4s ease; }
+.streak-label { color: var(--accent-2); font-weight: 700; }
+
 .domain-tabs {
   display: flex;
   gap: 6px;
@@ -217,6 +222,27 @@ body[data-arena="grove"] #screen-game {
     radial-gradient(ellipse 900px 520px at 50% -8%, rgba(95,191,111,0.26), transparent 60%),
     radial-gradient(ellipse 700px 460px at 0% 108%, rgba(209,165,59,0.10), transparent 60%),
     var(--bg);
+}
+
+/* Ambient drifting motes — a handful of soft glowing dots injected by JS
+   (initArenaMotes), slowly rising behind the board for a "living" arena
+   instead of a static gradient. Sits between the backdrop (painted on
+   #screen-game itself) and the board content (negative z-index keeps it
+   there even though the motes container is absolutely positioned). */
+#arena-motes { position: absolute; inset: 0; z-index: -1; overflow: hidden; pointer-events: none; }
+.mote {
+  position: absolute; bottom: -6%; border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,255,255,0.9), rgba(255,255,255,0) 70%);
+  animation: moteFloat linear infinite;
+}
+@keyframes moteFloat {
+  0% { transform: translateY(0) translateX(0); opacity: 0; }
+  8% { opacity: var(--mote-o, 0.5); }
+  92% { opacity: var(--mote-o, 0.5); }
+  100% { transform: translateY(-112vh) translateX(var(--drift, 20px)); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mote { animation: none; display: none; }
 }
 
 .hero-row {
@@ -351,10 +377,62 @@ body[data-arena="grove"] #screen-game {
 .modal-cards { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin: 14px 0; }
 .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 10px; }
 
-.gameover-box { text-align: center; }
-.gameover-box h1 { font-size: 32px; margin: 0 0 8px; }
+.gameover-box {
+  text-align: center; position: relative; overflow: hidden;
+  border: 1px solid var(--border);
+}
+.gameover-box[data-result="win"] {
+  background:
+    radial-gradient(ellipse 520px 320px at 50% -10%, rgba(95,191,111,0.30), transparent 65%),
+    var(--bg-panel);
+}
+.gameover-box[data-result="loss"] {
+  background:
+    radial-gradient(ellipse 520px 320px at 50% -10%, rgba(224,85,111,0.26), transparent 65%),
+    var(--bg-panel);
+}
+.gameover-box[data-result="draw"] {
+  background:
+    radial-gradient(ellipse 520px 320px at 50% -10%, rgba(255,180,84,0.26), transparent 65%),
+    var(--bg-panel);
+}
+.gameover-box h1 { font-size: 34px; margin: 0 0 8px; text-shadow: 0 0 24px currentColor; }
 .gameover-box h1.win { color: var(--good); }
 .gameover-box h1.lose { color: var(--danger); }
+.gameover-box h1.draw { color: var(--accent-2); }
+
+.go-mvp { display: flex; flex-direction: column; align-items: center; gap: 6px; margin: 14px auto 4px; }
+.go-mvp-art {
+  width: 128px; height: 128px; border-radius: 16px; overflow: hidden;
+  border: 3px solid var(--dcolor, var(--accent)); box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+}
+.go-mvp-art .card-art, .go-mvp-art svg, .go-mvp-art img { width: 100%; height: 100%; }
+.go-mvp-label { font-size: 11px; letter-spacing: 0.06em; color: var(--text-dim); text-transform: uppercase; font-weight: 700; }
+.go-mvp-name { font-size: 17px; font-weight: 800; }
+
+.go-chips { display: flex; gap: 8px; justify-content: center; margin: 14px 0; flex-wrap: wrap; }
+.go-chip {
+  background: var(--bg-panel-2); border-radius: 10px; padding: 8px 14px; min-width: 84px;
+}
+.go-chip .go-chip-value { font-size: 22px; font-weight: 800; color: var(--accent); }
+.go-chip .go-chip-label { font-size: 10.5px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.04em; }
+
+.go-achievement {
+  background: rgba(255,180,84,0.12); border: 1px solid var(--accent-2); color: var(--accent-2);
+  border-radius: 8px; padding: 8px 12px; font-weight: 700; font-size: 13px; margin: 10px auto; max-width: 420px;
+}
+
+.achv-list { display: flex; flex-direction: column; gap: 8px; max-height: 60vh; overflow-y: auto; }
+.achv-row {
+  display: flex; align-items: center; gap: 12px; padding: 10px 12px;
+  background: var(--bg-panel-2); border-radius: 8px; border: 1px solid var(--border); opacity: 0.55;
+}
+.achv-row.unlocked { opacity: 1; border-color: var(--accent-2); }
+.achv-icon { font-size: 22px; flex-shrink: 0; }
+.achv-body { flex: 1; min-width: 0; }
+.achv-label { font-weight: 700; font-size: 13.5px; }
+.achv-desc { font-size: 11.5px; color: var(--text-dim); }
+.achv-reward { font-weight: 700; font-size: 12.5px; color: var(--accent-2); flex-shrink: 0; }
 
 /* ---------------------------------------------------------- Card redesign */
 
@@ -427,6 +505,14 @@ body[data-arena="grove"] #screen-game {
 }
 .hand-card:hover::after { opacity: 1; }
 .hand-card.unaffordable:hover::after { opacity: 0; }
+
+.card-tile::after {
+  content: '';
+  position: absolute; inset: 0; pointer-events: none; border-radius: 7px;
+  background: radial-gradient(circle at var(--mx, 50%) var(--my, 50%), rgba(255,255,255,0.32), transparent 45%);
+  opacity: 0; transition: opacity 0.15s ease;
+}
+.card-tile:not(.locked):hover::after { opacity: 1; }
 
 /* ---------------------------------------------------------- Card art */
 

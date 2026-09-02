@@ -13,6 +13,11 @@
     <div>
       <h1>RH CARD — Construction du deck</h1>
       <div class="sub" id="deckbuilder-subtitle">Sélectionnez 25 à 30 cartes parmi les 91 éditeurs du marché SIRH.</div>
+      <div class="collection-progress" id="collection-progress-wrap">
+        <div class="collection-progress-bar"><div class="collection-progress-fill" id="collection-progress-fill"></div></div>
+        <span id="collection-progress-label"></span>
+        <span id="streak-label" class="streak-label"></span>
+      </div>
     </div>
     <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
       <div class="domain-tabs" style="padding:0; border:none;">
@@ -28,6 +33,7 @@
       </label>
       <button id="btn-theme-toggle-builder" class="icon-btn theme-toggle-btn" title="Basculer thème clair/sombre">🌙</button>
       <button id="btn-options-builder" class="icon-btn" title="Options">⚙️</button>
+      <button id="btn-achievements" class="icon-btn" title="Succès">🏆</button>
       <button id="btn-help-builder" class="icon-btn" title="Comment jouer">❓</button>
       <button id="btn-open-booster">🎁 Ouvrir un booster (0)</button>
       <button id="btn-random-deck">Deck aléatoire</button>
@@ -57,6 +63,7 @@
 </section>
 
 <section id="screen-game" class="screen">
+  <div id="arena-motes"></div>
   <div class="game-body">
     <div class="top-bar">
       <div class="turn-indicator" id="turn-indicator">Tour 1</div>
@@ -121,9 +128,11 @@
 <script src="js/data/describe.js"></script>
 <script src="js/data/cardart.js"></script>
 <script src="js/data/collection.js"></script>
+<script src="js/data/progression.js"></script>
 <script src="js/data/decks-storage.js"></script>
 <script src="js/fx/sfx.js"></script>
 <script src="js/fx/vfx.js"></script>
+<script src="js/fx/sharecard.js"></script>
 <script src="js/engine/synergy.js"></script>
 <script src="js/engine/engine.js"></script>
 <script src="js/engine/ai.js"></script>

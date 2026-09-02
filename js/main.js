@@ -143,7 +143,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   applyTheme(currentTheme);
   applyArena(currentArena);
+  initArenaMotes();
   offerTutorialIfFirstVisit();
+  offerDailyBonusIfAny();
 
   const savedDifficulty = localStorage.getItem('rhcard_ai_difficulty');
   if (savedDifficulty) document.getElementById('ai-difficulty-select').value = savedDifficulty;
