@@ -149,13 +149,15 @@ function* runAiAttacksSteps(state) {
     const provs = getProvocationCards(state, 'player');
     if (provs.length > 0) {
       const target = aiPickAttackTarget(state, a, provs);
+      if (isPointlessSuicide(state, 'ai', a, 'player', target)) continue; // hold back rather than feed an unbreakable wall
       const result = attack(state, 'ai', a.uid, 'card', target.uid);
       yield { type: 'attack', attacker: a, targetType: 'card', target, result };
       continue;
     }
 
     const best = aiBestTrade(state, a, opp.board);
-    const takesTrade = best && best.score >= settings.tradeThreshold &&
+    const faceScore = closingFaceScore(opp.heroHp);
+    const takesTrade = best && best.score >= settings.tradeThreshold && best.score >= faceScore &&
       !(settings.faceOverTradeChance > 0 && Math.random() < settings.faceOverTradeChance);
     if (takesTrade) {
       const result = attack(state, 'ai', a.uid, 'card', best.card.uid);
@@ -184,6 +186,31 @@ function aiPickAttackTarget(state, attacker, provocateurs) {
     if (score > bestScore) { bestScore = score; best = d; }
   }
   return best;
+}
+
+// A mandatory Provocation target doesn't have to be attacked — attacking is
+// always optional, Provocation only restricts *who* you may hit if you do.
+// Without this check the AI threw every eligible creature at a taunt every
+// single turn even when it could neither kill it nor survive the swing,
+// which just fed a defensive wall for free instead of holding board presence.
+function isPointlessSuicide(state, attackerSeat, attacker, defenderSeat, defender) {
+  const aAtk = getEffectiveAtk(state, attackerSeat, attacker);
+  const aDef = getEffectiveDef(state, attackerSeat, attacker);
+  const dAtk = getEffectiveAtk(state, defenderSeat, defender);
+  const dDef = getEffectiveDef(state, defenderSeat, defender);
+  const dmgToDefender = aAtk <= 0 ? 0 : Math.max(1, aAtk - dDef);
+  const dmgToAttacker = dAtk <= 0 ? 0 : Math.max(1, dAtk - aDef);
+  const kills = dmgToDefender >= defender.currentHp;
+  const dies = dmgToAttacker >= attacker.currentHp;
+  return dies && !kills;
+}
+
+// Grows as the target hero's HP drops, so the AI increasingly prefers closing
+// the game out over marginal board trades instead of endlessly out-trading
+// into fatigue (games were stalling ~30+ turns before this existed — see
+// balance pass notes). At full HP this is 0 and never overrides a good trade.
+function closingFaceScore(oppHeroHp) {
+  return Math.max(0, (HERO_MAX_HP - oppHeroHp) / 3);
 }
 
 function aiBestTrade(state, attacker, enemyBoard) {
