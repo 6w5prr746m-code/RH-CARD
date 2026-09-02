@@ -835,6 +835,18 @@ body[data-arena="grove"] #screen-game {
   .deck-list { max-height: 22vh; }
 
   #screen-deckbuilder header { flex-direction: column; align-items: flex-start; gap: 10px; }
+  /* Full-size buttons wrapped one or two per row, pushing several rows of
+     chrome above the fold before any card was visible — tightening them
+     lets 3-4 fit per row instead. */
+  #screen-deckbuilder header button, #screen-deckbuilder header select { font-size: 12.5px; padding: 6px 10px; }
+  #screen-deckbuilder header .icon-btn { padding: 6px 8px; }
+
+  /* Wrapping to 3 rows of small buttons ate most of the screen before any
+     card was visible — a horizontally-scrollable single row keeps every
+     domain one swipe away instead. */
+  .domain-tabs { flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+  .domain-tabs::-webkit-scrollbar { display: none; }
+  .domain-tabs button { flex: 0 0 auto; }
 }
 
 @media (max-width: 600px) {
@@ -844,13 +856,23 @@ body[data-arena="grove"] #screen-game {
 
   .mini-card { width: 74px; min-height: 96px; font-size: 10px; }
   .hand-card { width: 82px; min-height: 130px; font-size: 10px; }
-  .hand-row { gap: 5px; padding: 8px; }
-  .board-row { gap: 5px; padding: 6px; }
+  .hand-row { gap: 5px; padding: 8px; min-height: 0; }
+  .board-row { gap: 5px; padding: 6px; min-height: 88px; }
 
-  .game-controls { right: 8px; bottom: 12px; top: auto; transform: none; flex-direction: row; }
-  #end-turn-btn { padding: 10px 14px; font-size: 13px; }
+  /* Absolute + floating over the hand row (the desktop layout) has nowhere
+     safe to sit once the hand cards reach close to the screen edge, so it
+     rejoins the normal flow as a slim bar right under the hand instead. */
+  .game-controls {
+    position: static; flex-direction: row; justify-content: center; gap: 8px;
+    padding: 8px 10px; background: var(--bg-panel); border-top: 1px solid var(--border);
+  }
+  #end-turn-btn { padding: 10px 14px; font-size: 13px; flex: 1; max-width: 240px; }
 
   .card-tile { padding: 6px; font-size: 11px; }
+  /* "Non débloquée — ouvrez un booster..." repeated on every locked tile is
+     the single biggest source of visual noise on a small screen — once you
+     know what a lock icon means, the sentence adds nothing on a re-visit. */
+  .card-tile.locked .ability { display: none; }
   .card-tile.card-face { height: 172px; }
   .card-tile.card-face .card-art, .card-tile.card-face .card-art-scrim { top: -6px; left: -6px; right: -6px; bottom: -6px; }
   .pool-grid { grid-template-columns: repeat(auto-fill, minmax(108px, 1fr)); gap: 6px; padding: 10px; }
