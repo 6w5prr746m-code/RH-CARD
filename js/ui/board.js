@@ -696,11 +696,13 @@ function renderGame() {
   document.getElementById('turn-indicator').textContent = `Tour ${gameState.turnNumber} — ${turnText}`;
 
   const phHp = document.getElementById('player-hp');
-  phHp.textContent = `${bottom.heroHp} / ${bottom.heroMaxHp} PV`;
+  phHp.textContent = `${bottom.heroHp} / ${bottom.heroMaxHp} PV${bottom.catchUpActive ? ' 🆘' : ''}`;
   phHp.classList.toggle('low', bottom.heroHp <= 10);
+  phHp.title = bottom.catchUpActive ? 'Soutien de crise actif : +1 mana ce tour (HP critique).' : '';
   const aiHp = document.getElementById('ai-hp');
-  aiHp.textContent = `${top.heroHp} / ${top.heroMaxHp} PV`;
+  aiHp.textContent = `${top.heroHp} / ${top.heroMaxHp} PV${top.catchUpActive ? ' 🆘' : ''}`;
   aiHp.classList.toggle('low', top.heroHp <= 10);
+  aiHp.title = top.catchUpActive ? 'Soutien de crise actif : +1 mana ce tour (HP critique).' : '';
 
   document.getElementById('player-mana').textContent = `${bottom.mana} / ${bottom.maxMana} mana`;
   document.getElementById('ai-mana').textContent = `${top.mana} / ${top.maxMana} mana`;

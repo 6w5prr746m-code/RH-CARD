@@ -88,6 +88,7 @@ function createPlayerState(id, deckList) {
     pilotageSwapUsed: false,
     heroPowerDomain: computeDominantDomain(deckList),
     heroPowerUsedThisTurn: false,
+    catchUpActive: false,
   };
 }
 
@@ -174,6 +175,17 @@ function startTurn(state, playerId) {
     // opening-hand half of this fix and why both were needed.
     p.mana = clamp(p.mana + 1, 0, p.maxMana + 1);
   }
+
+  // Catch-up: a player whose hero is critically low (≤40% max HP) and behind
+  // the opponent's HP gets +1 temporary mana this turn — a small, bounded
+  // nudge so a strong early lead (e.g. a stacking domain synergy) can't
+  // snowball into an unwinnable game purely on tempo. Never touches maxMana
+  // or draws, so it can't compound turn over turn the way the removed
+  // Audit Flash token did, and it turns off the instant HP recovers.
+  const opp = state.players[opponentOf(playerId)];
+  p.catchUpActive = p.heroHp <= p.heroMaxHp * 0.4 && p.heroHp < opp.heroHp;
+  if (p.catchUpActive) p.mana = clamp(p.mana + 1, 0, p.maxMana + 1);
+
   p.activeDiscounts = [];
   p.recruitmentFirstDiscountUsed = false;
   p.pilotageDrawUpgradeUsed = false;
