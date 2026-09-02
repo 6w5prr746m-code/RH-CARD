@@ -90,6 +90,64 @@ function spawnAttackProjectile(fromRect, toRect, onImpact) {
   }, 220);
 }
 
+function spawnPowerBurst(rect) {
+  const root = getFxRoot();
+  if (!root || !rect) return;
+  const el = document.createElement('div');
+  el.className = 'fx-powerburst';
+  el.style.left = `${rect.left + rect.width / 2}px`;
+  el.style.top = `${rect.top + rect.height / 2}px`;
+  root.appendChild(el);
+  setTimeout(() => el.remove(), 600);
+}
+
+// A brief animated glow directly on an element (e.g. the hero-power button),
+// distinct from spawnPowerBurst's separate floating particle at the same spot.
+function pulseGlow(el, className = 'fx-glow', duration = 650) {
+  if (!el) return;
+  el.classList.remove(className);
+  void el.offsetWidth; // restart the animation even if it's still running
+  el.classList.add(className);
+  clearTimeout(el._pulseGlowT);
+  el._pulseGlowT = setTimeout(() => el.classList.remove(className), duration);
+}
+
+// One-shot pulse on a domain's synergy-panel row when it crosses a tier.
+function pulseSynergyBadge(domain) {
+  const el = document.querySelector(`.synergy-badge[data-domain="${domain}"]`);
+  pulseGlow(el, 'fx-tierup', 1000);
+}
+
+// A wider spread of simultaneous bursts across the board — used for bigger
+// wins (campaign boss, full campaign clear) where the standard falling
+// confetti alone feels too small.
+function spawnFireworks(count = 6) {
+  const root = getFxRoot();
+  if (!root) return;
+  const colors = ['#4fd1c5', '#ffb454', '#e0556f', '#5fbf6f', '#7d3bd1', '#3b6fd1'];
+  for (let i = 0; i < count; i++) {
+    setTimeout(() => {
+      const el = document.createElement('div');
+      el.className = 'fx-firework';
+      el.style.left = `${15 + Math.random() * 70}vw`;
+      el.style.top = `${15 + Math.random() * 45}vh`;
+      const color = colors[Math.floor(Math.random() * colors.length)];
+      for (let j = 0; j < 14; j++) {
+        const p = document.createElement('div');
+        p.className = 'fx-firework-spark';
+        p.style.background = color;
+        const angle = (j / 14) * Math.PI * 2;
+        const dist = 60 + Math.random() * 40;
+        p.style.setProperty('--dx', `${Math.cos(angle) * dist}px`);
+        p.style.setProperty('--dy', `${Math.sin(angle) * dist}px`);
+        el.appendChild(p);
+      }
+      root.appendChild(el);
+      setTimeout(() => el.remove(), 900);
+    }, i * 180);
+  }
+}
+
 function spawnConfetti(count = 70) {
   const root = getFxRoot();
   if (!root) return;

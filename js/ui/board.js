@@ -461,6 +461,7 @@ function checkSynergyToasts(seatId, board) {
   for (const d of SYNERGY_DOMAINS) {
     if (tiers[d] > seen[d]) {
       showSynergyToast(d, tiers[d]);
+      pulseSynergyBadge(d);
       SFX.play('synergy');
     }
     seen[d] = tiers[d];
@@ -517,6 +518,9 @@ function onHeroPowerClick() {
   }
   SFX.play('synergy');
   recordHeroPowerUse();
+  const powerBtn = document.getElementById('hero-power-btn');
+  pulseGlow(powerBtn);
+  spawnPowerBurst(powerBtn.getBoundingClientRect());
   renderGame();
   animateDiff(before, captureSnapshot(gameState), beforeRects);
   if (gameState.winner) showGameOver();
@@ -653,6 +657,7 @@ async function runAiTurnAnimated() {
         if (step.card.cardId === 'peoplespheres') { showBanner('SYNCHRONISATION UNIVERSELLE (IA)', { epic: true }); spawnConfetti(20); }
       } else if (step.type === 'power') {
         SFX.play('synergy');
+        spawnPowerBurst(heroRect('ai'));
         renderGame();
         animateDiff(before, captureSnapshot(gameState), beforeRects);
       } else if (step.type === 'attack') {
@@ -707,10 +712,12 @@ function renderGame() {
   const phHp = document.getElementById('player-hp');
   phHp.textContent = `${bottom.heroHp} / ${bottom.heroMaxHp} PV${bottom.catchUpActive ? ' 🆘' : ''}`;
   phHp.classList.toggle('low', bottom.heroHp <= 10);
+  phHp.classList.toggle('critical', bottom.catchUpActive);
   phHp.title = bottom.catchUpActive ? 'Soutien de crise actif : +1 mana ce tour (HP critique).' : '';
   const aiHp = document.getElementById('ai-hp');
   aiHp.textContent = `${top.heroHp} / ${top.heroMaxHp} PV${top.catchUpActive ? ' 🆘' : ''}`;
   aiHp.classList.toggle('low', top.heroHp <= 10);
+  aiHp.classList.toggle('critical', top.catchUpActive);
   aiHp.title = top.catchUpActive ? 'Soutien de crise actif : +1 mana ce tour (HP critique).' : '';
 
   document.getElementById('player-mana').textContent = `${bottom.mana} / ${bottom.maxMana} mana`;
@@ -835,7 +842,7 @@ function renderSynergyPanel(board) {
     const count = counts[d];
     const summary = tier > 0 ? SYNERGY_SUMMARY[d][tier] : `${count}/2 pour palier 2`;
     return `
-      <div class="synergy-badge" style="--dcolor:${DOMAIN_COLORS[d]}">
+      <div class="synergy-badge" data-domain="${d}" style="--dcolor:${DOMAIN_COLORS[d]}">
         <div>
           <div>${DOMAIN_LABELS[d]} (${count})</div>
           <div style="color:var(--text-dim); font-size:10.5px;">${summary}</div>
@@ -1172,6 +1179,12 @@ function showGameOver() {
 
   const isCampaign = gameState.campaignStageIndex != null;
   const campaignResult = isCampaign ? recordCampaignResult(gameState.campaignStageIndex, playerWonVsAi) : null;
+  if (isCampaign && playerWonVsAi) {
+    const stage = CAMPAIGN_STAGES[gameState.campaignStageIndex];
+    if (campaignResult.campaignComplete || (stage && stage.boss)) {
+      spawnFireworks(campaignResult.campaignComplete ? 10 : 6);
+    }
+  }
 
   const title = draw ? 'Égalité' : local ? `${winnerName} remporte le duel !` : (playerWonVsAi ? 'Victoire !' : 'Défaite');
   const subtitle = draw ? 'Les deux héros tombent ensemble.'
