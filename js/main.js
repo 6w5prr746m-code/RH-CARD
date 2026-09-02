@@ -142,6 +142,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('btn-help-game').addEventListener('click', () => showTutorialModal());
 
   applyTheme(currentTheme);
+  applyArena(currentArena);
   offerTutorialIfFirstVisit();
 
   const savedDifficulty = localStorage.getItem('rhcard_ai_difficulty');

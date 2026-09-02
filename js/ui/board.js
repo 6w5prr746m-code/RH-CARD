@@ -69,8 +69,7 @@ function initCardZoom() {
   document.addEventListener('pointercancel', cancelPress);
 }
 
-function showCardZoom(card) {
-  const root = document.getElementById('zoom-root');
+function cardZoomHtml(card, { closable } = {}) {
   const color = DOMAIN_COLORS[card.domain] || '#666';
   const isAction = card.cardType === 'ACTION';
   const atk = card.currentAtk ?? card.atk;
@@ -78,29 +77,32 @@ function showCardZoom(card) {
   const hp = card.currentHp ?? card.hp;
   const maxHp = card.maxHp ?? card.hp;
   const cost = card.baseCost ?? card.cost;
-  root.innerHTML = `
-    <div class="modal-overlay" id="zoom-overlay">
-      <div class="card-zoom ${rarityClass(card.rarity)}" style="--dcolor:${color}">
-        <button class="card-zoom-close" aria-label="Fermer">✕</button>
-        <div class="card-art">${cardArtMarkup(card)}</div>
-        <div class="cz-header">
-          <span class="domain-icon" style="font-size:24px;">${DOMAIN_ICONS[card.domain] || ''}</span>
-          <div>
-            <div class="cz-name">${card.name}</div>
-            <div class="cz-sub">${rarityLabel(card.rarity)} · ${DOMAIN_LABELS[card.domain] || ''}${isAction ? ' · <span class="action-tag">⚡ Action</span>' : ''}</div>
-          </div>
-          <div class="cz-cost">${cost}</div>
+  return `
+    <div class="card-zoom ${rarityClass(card.rarity)}" style="--dcolor:${color}">
+      ${closable ? '<button class="card-zoom-close" aria-label="Fermer">✕</button>' : ''}
+      <div class="card-art">${cardArtMarkup(card)}</div>
+      <div class="cz-header">
+        <span class="domain-icon" style="font-size:24px;">${DOMAIN_ICONS[card.domain] || ''}</span>
+        <div>
+          <div class="cz-name">${card.name}</div>
+          <div class="cz-sub">${rarityLabel(card.rarity)} · ${DOMAIN_LABELS[card.domain] || ''}${isAction ? ' · <span class="action-tag">⚡ Action</span>' : ''}</div>
         </div>
-        ${isAction ? '' : `
-        <div class="cz-stats">
-          <div><span class="mc-atk">${atk}</span>ATK</div>
-          <div><span class="mc-def">${def}</span>DEF</div>
-          <div><span class="mc-hp">${hp}${hp !== maxHp ? `/${maxHp}` : ''}</span>HP</div>
-        </div>`}
-        ${card.pointFaible ? '<div class="pf-tag" style="margin-bottom:10px;">⚠ Point Faible vs PeopleSpheres</div>' : ''}
-        <div class="cz-ability">${cardAbilityText(card)}</div>
+        <div class="cz-cost">${cost}</div>
       </div>
+      ${isAction ? '' : `
+      <div class="cz-stats">
+        <div><span class="mc-atk">${atk}</span>ATK</div>
+        <div><span class="mc-def">${def}</span>DEF</div>
+        <div><span class="mc-hp">${hp}${hp !== maxHp ? `/${maxHp}` : ''}</span>HP</div>
+      </div>`}
+      ${card.pointFaible ? '<div class="pf-tag" style="margin-bottom:10px;">⚠ Point Faible vs PeopleSpheres</div>' : ''}
+      <div class="cz-ability">${cardAbilityText(card)}</div>
     </div>`;
+}
+
+function showCardZoom(card) {
+  const root = document.getElementById('zoom-root');
+  root.innerHTML = `<div class="modal-overlay" id="zoom-overlay">${cardZoomHtml(card, { closable: true })}</div>`;
   document.getElementById('zoom-overlay').addEventListener('click', hideCardZoom);
   root.querySelector('.card-zoom').addEventListener('click', (e) => e.stopPropagation());
   root.querySelector('.card-zoom-close').addEventListener('click', hideCardZoom);
@@ -108,6 +110,37 @@ function showCardZoom(card) {
 
 function hideCardZoom() {
   document.getElementById('zoom-root').innerHTML = '';
+}
+
+// ---------------------------------------------------------------- hover preview
+
+// Lightweight, non-modal card peek: shown next to the hovered card (deck
+// builder pool, hand) so its full illustration/text is readable without a
+// click — distinct from showCardZoom (click/long-press, needs dismissing).
+function showHoverPreview(card, anchorEl) {
+  const el = document.getElementById('hover-preview');
+  el.innerHTML = cardZoomHtml(card, { closable: false });
+  el.classList.remove('hidden');
+
+  const rect = anchorEl.getBoundingClientRect();
+  const panelWidth = el.offsetWidth || 320;
+  const panelHeight = el.offsetHeight || 420;
+  const margin = 14;
+
+  let left = rect.right + margin;
+  if (left + panelWidth > window.innerWidth - margin) left = rect.left - margin - panelWidth;
+  if (left < margin) left = Math.min(Math.max(rect.left, margin), window.innerWidth - panelWidth - margin);
+
+  let top = rect.top;
+  if (top + panelHeight > window.innerHeight - margin) top = window.innerHeight - panelHeight - margin;
+  if (top < margin) top = margin;
+
+  el.style.left = `${left}px`;
+  el.style.top = `${top}px`;
+}
+
+function hideHoverPreview() {
+  document.getElementById('hover-preview').classList.add('hidden');
 }
 
 function findCardAnywhere(state, uid) {
@@ -160,6 +193,15 @@ function initBoardUI() {
   document.getElementById('player-hand').addEventListener('click', (e) => {
     const el = e.target.closest('.hand-card');
     if (el) onHandCardClick(el.dataset.uid);
+  });
+  document.getElementById('player-hand').addEventListener('mouseover', (e) => {
+    const el = e.target.closest('.hand-card');
+    if (!el) return;
+    const card = resolveCardFromElement(el);
+    if (card) showHoverPreview(card, el);
+  });
+  document.getElementById('player-hand').addEventListener('mouseout', (e) => {
+    if (e.target.closest('.hand-card')) hideHoverPreview();
   });
   document.getElementById('player-board').addEventListener('click', (e) => {
     const el = e.target.closest('.mini-card');
@@ -257,6 +299,24 @@ function toggleThemeQuick() {
   applyTheme(effectiveThemeIsLight() ? 'dark' : 'light');
 }
 
+// ---------------------------------------------------------------- arena backdrop
+
+const ARENA_KEY = 'rhcard_arena';
+const ARENAS = [
+  ['aurora', 'Aurore (teal)'],
+  ['storm', 'Orage (violet)'],
+  ['ember', 'Forge (ambre)'],
+  ['grove', 'Bosquet (vert)'],
+];
+let currentArena = localStorage.getItem(ARENA_KEY) || 'aurora';
+if (!ARENAS.some(([key]) => key === currentArena)) currentArena = 'aurora';
+
+function applyArena(arena) {
+  currentArena = ARENAS.some(([key]) => key === arena) ? arena : 'aurora';
+  document.body.setAttribute('data-arena', currentArena);
+  localStorage.setItem(ARENA_KEY, currentArena);
+}
+
 // ---------------------------------------------------------------- options modal
 
 function showOptionsModal() {
@@ -286,11 +346,18 @@ function showOptionsModal() {
             <option value="light">Clair</option>
           </select>
         </div>
+        <div class="options-row">
+          <span>Arène de jeu</span>
+          <select id="opt-arena">
+            ${ARENAS.map(([key, label]) => `<option value="${key}">${label}</option>`).join('')}
+          </select>
+        </div>
         <div class="modal-actions"><button id="opt-close" class="primary">Fermer</button></div>
       </div>
     </div>`;
   document.getElementById('opt-anim-speed').value = animSpeed;
   document.getElementById('opt-theme').value = currentTheme;
+  document.getElementById('opt-arena').value = currentArena;
 
   document.getElementById('opt-mute-toggle').addEventListener('click', (e) => {
     const muted = SFX.toggleMute();
@@ -299,6 +366,7 @@ function showOptionsModal() {
   });
   document.getElementById('opt-anim-speed').addEventListener('change', (e) => setAnimSpeed(e.target.value));
   document.getElementById('opt-theme').addEventListener('change', (e) => applyTheme(e.target.value));
+  document.getElementById('opt-arena').addEventListener('change', (e) => applyArena(e.target.value));
   document.getElementById('options-overlay').addEventListener('click', (e) => { if (e.target.id === 'options-overlay') root.innerHTML = ''; });
   document.getElementById('opt-close').addEventListener('click', () => { root.innerHTML = ''; });
 }
@@ -567,6 +635,7 @@ function resolveChoiceFromUI(selection) {
 // ---------------------------------------------------------------- rendering
 
 function renderGame() {
+  hideHoverPreview();
   if (!gameState) return;
   hideAttackPreview();
   const bottomSeat = humanSeat();

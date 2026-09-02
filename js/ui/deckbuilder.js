@@ -46,6 +46,15 @@ function initDeckBuilder() {
     if (!tile) return;
     addCardToDeck(tile.dataset.id);
   });
+  document.getElementById('pool-grid').addEventListener('mouseover', (e) => {
+    const tile = e.target.closest('.card-tile');
+    if (!tile) return;
+    const card = CARDS_BY_ID[tile.dataset.id];
+    if (card) showHoverPreview(card, tile);
+  });
+  document.getElementById('pool-grid').addEventListener('mouseout', (e) => {
+    if (e.target.closest('.card-tile')) hideHoverPreview();
+  });
   document.getElementById('deck-list').addEventListener('click', (e) => {
     const row = e.target.closest('.deck-row');
     if (!row) return;
@@ -147,6 +156,7 @@ function poolForFilter() {
 }
 
 function renderPool() {
+  hideHoverPreview();
   const grid = document.getElementById('pool-grid');
   const cards = poolForFilter();
   grid.innerHTML = cards.map(cardTileHtml).join('');
