@@ -398,6 +398,7 @@ select {
 
 .card-art { line-height: 0; overflow: hidden; pointer-events: none; }
 .card-art svg { display: block; width: 100%; height: 100%; }
+.card-art img { display: block; width: 100%; height: 100%; object-fit: cover; }
 
 .card-tile .card-art { height: 70px; margin: -8px -8px 6px -8px; border-radius: 7px 7px 0 0; }
 .hand-card .card-art { height: 56px; margin: -8px -8px 6px -8px; border-radius: 8px 8px 0 0; }

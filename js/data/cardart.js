@@ -1,13 +1,23 @@
-// Generative card illustrations — no external assets, no API calls.
-// Each card gets a deterministic (seeded by its id) abstract "corporate tech"
-// illustration: a domain-colored gradient panel + one of a handful of
-// procedural motifs + the domain's icon front and center. Same card id
-// always renders the same art, so it stays stable across re-renders/sessions.
+// Card illustrations. Two sources, one entry point:
 //
-// Kept deliberately swappable: cardArtMarkup(card) is the only entry point
-// used by the UI. If real illustrations ever become available (e.g. via an
-// image-generation API), this function is the single place to redirect to
-// `<img src="art/${card.id}.png">` instead, without touching any template.
+// 1. Generative fallback (default): a deterministic (seeded by card id)
+//    abstract "corporate tech" panel — domain-colored gradient + procedural
+//    motif + the domain icon. Same id always renders the same art, so it's
+//    stable across re-renders/sessions, and it needs no external assets.
+// 2. Real illustration: a PNG dropped at art/<card-id>.png. To switch a card
+//    over, add its id to REAL_ART_IDS below — nothing else needs touching.
+//    If the file is missing or fails to load, the <img> automatically falls
+//    back to the generative art via onerror, so a bad/missing drop never
+//    breaks the layout.
+//
+// cardArtMarkup(card) is the only entry point used by every template
+// (card-tile, hand-card, mini-card, card-zoom).
+
+// Card ids with a real illustration at art/<id>.png. Empty until artwork is
+// generated and dropped in — see docs/card-art-prompts.md for the per-card
+// prompts used to generate them externally.
+const REAL_ART_IDS = new Set([
+]);
 
 function hashStringToSeed(str) {
   let h = 2166136261;
@@ -173,6 +183,23 @@ function cardArtMarkup(card) {
   const id = card.id || card.cardId || card.name;
   if (_artCache[id]) return _artCache[id];
 
+  const markup = REAL_ART_IDS.has(id)
+    ? `<img class="card-art-img" src="art/${id}.png" alt="" loading="lazy" onerror="this.outerHTML=cardArtFallbackSvg('${id}');">`
+    : generativeCardArtSvg(card);
+
+  _artCache[id] = markup;
+  return markup;
+}
+
+// Used both as the default art and as the onerror fallback for a missing/broken
+// real illustration (see cardArtMarkup) — always builds the procedural SVG,
+// ignoring REAL_ART_IDS.
+function cardArtFallbackSvg(id) {
+  return generativeCardArtSvg(CARDS_BY_ID[id] || ALL_CARDS.find(c => c.id === id));
+}
+
+function generativeCardArtSvg(card) {
+  const id = card.id || card.cardId || card.name;
   const isLegendary = id === 'peoplespheres';
   const domain = card.domain || DOMAIN.TRANSVERSAL;
   const baseColor = isLegendary ? '#7d3bd1' : (DOMAIN_COLORS[domain] || '#4fd1c5');
