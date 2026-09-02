@@ -20,6 +20,10 @@
 // them externally.
 const REAL_ART_IDS = new Map([
   ['peoplespheres', 'jpg'],
+  ['audit-paie-express', 'jpg'],
+  ['deel', 'jpg'],
+  ['inser', 'jpg'],
+  ['nibelis', 'jpg'],
 ]);
 
 function hashStringToSeed(str) {
