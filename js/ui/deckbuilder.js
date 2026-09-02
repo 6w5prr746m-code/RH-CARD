@@ -16,6 +16,26 @@ const DOMAIN_TAB_ORDER = [
   ['LEGEND', 'Légendaire'],
 ];
 
+// Starter decks by archetype — a quick "just play" alternative to the fully
+// random "Deck aléatoire" shortcut, biased toward 2 domains for a
+// recognizable identity from turn one. buildArchetypeDeckList (collection.js)
+// still guarantees a playable 25-30 card deck even for a brand-new player
+// who doesn't yet own enough of those 2 domains alone.
+const STARTER_ARCHETYPES = [
+  { id: 'rempart-administratif', name: 'Rempart Administratif', domains: [DOMAIN.PAIE_GA, DOMAIN.GTA], desc: 'Contrôle — soins et défense.' },
+  { id: 'sourcing-eclair', name: 'Sourcing Éclair', domains: [DOMAIN.RECRUTEMENT, DOMAIN.TALENT_PERF], desc: 'Agressif — tempo et pression.' },
+  { id: 'montee-competence', name: 'Montée en Compétence', domains: [DOMAIN.FORMATION, DOMAIN.TALENT_PERF], desc: 'Milieu de partie — cartes qui grossissent.' },
+  { id: 'vision-data', name: 'Vision Data', domains: [DOMAIN.PILOTAGE_BI, DOMAIN.PAIE_GA], desc: 'Valeur — pioche et stabilité.' },
+  { id: 'croissance-express', name: 'Croissance Express', domains: [DOMAIN.RECRUTEMENT, DOMAIN.FORMATION], desc: 'Agressif — courbe basse, beaucoup de cartes.' },
+  { id: 'reporting-strategique', name: 'Reporting Stratégique', domains: [DOMAIN.PILOTAGE_BI, DOMAIN.GTA], desc: 'Contrôle — information et solidité.' },
+];
+
+function renderStarterDeckSelect() {
+  const select = document.getElementById('starter-deck-select');
+  select.innerHTML = '<option value="">🎯 Deck de démarrage</option>' +
+    STARTER_ARCHETYPES.map(a => `<option value="${a.id}">${a.name} — ${DOMAIN_LABELS[a.domains[0]]}/${DOMAIN_LABELS[a.domains[1]]}</option>`).join('');
+}
+
 function maxCopiesFor(card) {
   return (card.rarity === 3 || card.rarity === 'L') ? 1 : 2;
 }
@@ -70,6 +90,21 @@ function initDeckBuilder() {
     SFX.play('click');
     builderState.counts = {};
     for (const id of buildRandomOwnedDeckList()) {
+      builderState.counts[id] = (builderState.counts[id] || 0) + 1;
+    }
+    renderPool();
+    renderDeckPanel();
+  });
+  renderStarterDeckSelect();
+  document.getElementById('starter-deck-select').addEventListener('change', (e) => {
+    const archetypeId = e.target.value;
+    e.target.value = '';
+    if (!archetypeId) return;
+    const archetype = STARTER_ARCHETYPES.find(a => a.id === archetypeId);
+    if (!archetype) return;
+    SFX.play('click');
+    builderState.counts = {};
+    for (const id of buildArchetypeDeckList(archetype.domains)) {
       builderState.counts[id] = (builderState.counts[id] || 0) + 1;
     }
     renderPool();

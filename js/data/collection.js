@@ -100,3 +100,24 @@ function buildRandomOwnedDeckList() {
   }
   return shuffle(candidates).slice(0, DECK_MAX);
 }
+
+// Archetype starter decks (see STARTER_ARCHETYPES in deckbuilder.js) bias
+// toward a couple of domains while still guaranteeing a buildable deck for a
+// brand-new player: the starter collection only grants ~7 rarity-1 cards per
+// domain (not enough alone to hit DECK_MIN), so this fills the rest from
+// whatever else is owned — thematic first, playable always.
+function buildArchetypeDeckList(domains) {
+  const state = loadCollection();
+  const inDomain = [];
+  const outDomain = [];
+  for (const [id, count] of Object.entries(state.owned)) {
+    const card = CARDS_BY_ID[id];
+    if (!card) continue;
+    const avail = Math.min(count, maxOwnedFor(card));
+    const bucket = domains.includes(card.domain) ? inDomain : outDomain;
+    for (let i = 0; i < avail; i++) bucket.push(id);
+  }
+  const list = shuffle(inDomain);
+  if (list.length < DECK_MAX) list.push(...shuffle(outDomain));
+  return list.slice(0, DECK_MAX);
+}
