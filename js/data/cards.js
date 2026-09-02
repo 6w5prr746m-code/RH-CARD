@@ -41,6 +41,20 @@ const DOMAIN_ICONS = {
   [DOMAIN.TRANSVERSAL]: '🌐',
 };
 
+// One hero power per domain, auto-assigned to each player from their deck's
+// dominant domain (see computeDominantDomain in engine.js) — no separate
+// "pick a hero" step, it just follows whatever the deck is already built
+// around. 2 mana, once per turn, reuses existing onPlay effect types so the
+// same job/effect engine that resolves cards resolves these too.
+const HERO_POWERS = {
+  [DOMAIN.PAIE_GA]: { label: 'Ajustement Salarial', cost: 2, desc: 'Votre héros récupère 2 PV.', effects: [{ type: 'heroHeal', amount: 2, target: 'self' }] },
+  [DOMAIN.GTA]: { label: 'Renfort Ponctuel', cost: 2, desc: '+2 DEF ce tour à une carte alliée.', effects: [{ type: 'buffTarget', def: 2, target: 'chosenAlly', duration: 'turn' }] },
+  [DOMAIN.RECRUTEMENT]: { label: 'Sourcing Rapide', cost: 3, desc: 'Piochez 1 carte.', effects: [{ type: 'draw', amount: 1 }] },
+  [DOMAIN.FORMATION]: { label: 'Mentorat', cost: 2, desc: '+1 ATK ce tour à une carte alliée.', effects: [{ type: 'buffTarget', atk: 1, target: 'chosenAlly', duration: 'turn' }] },
+  [DOMAIN.TALENT_PERF]: { label: "Regain d'Énergie", cost: 2, desc: '+2 ATK ce tour à une carte alliée.', effects: [{ type: 'buffTarget', atk: 2, target: 'chosenAlly', duration: 'turn' }] },
+  [DOMAIN.PILOTAGE_BI]: { label: "Coup d'Œil", cost: 2, desc: 'Regardez le dessus de votre pioche.', effects: [{ type: 'peekTopDeck', amount: 1 }] },
+};
+
 // rarity: 1 = ★, 2 = ★★, 3 = ★★★, 'L' = Légendaire (∞)
 
 const MINION_CARDS = [
@@ -253,6 +267,18 @@ const ACTION_CARDS = [
     keywords: [], onPlay: [{ type: 'buffAllDomain', atk: 3, domain: 'self' }] },
   { id: 'reporting-flash', name: 'Reporting Flash', cardType: 'ACTION', domain: DOMAIN.PILOTAGE_BI, rarity: 1, cost: 1,
     keywords: [], onPlay: [{ type: 'drawKeepBest', amount: 2, keep: 1 }] },
+  { id: 'plan-de-continuite', name: 'Plan de Continuité', cardType: 'ACTION', domain: DOMAIN.PAIE_GA, rarity: 2, cost: 4,
+    keywords: [], onPlay: [{ type: 'heroHeal', amount: 5, target: 'self' }] },
+  { id: 'renfort-de-securite', name: 'Renfort de Sécurité', cardType: 'ACTION', domain: DOMAIN.GTA, rarity: 2, cost: 4,
+    keywords: [], onPlay: [{ type: 'buffTarget', def: 3, hp: 1, target: 'chosenAlly' }] },
+  { id: 'cooptation-express', name: 'Cooptation Express', cardType: 'ACTION', domain: DOMAIN.RECRUTEMENT, rarity: 1, cost: 1,
+    keywords: [], onPlay: [{ type: 'costReduction', amount: 1, count: 1, domain: 'self' }] },
+  { id: 'parcours-certifiant', name: 'Parcours Certifiant', cardType: 'ACTION', domain: DOMAIN.FORMATION, rarity: 1, cost: 2,
+    keywords: [], onPlay: [{ type: 'condDrawIfDomainCount', domain: 'self', min: 2, amount: 1 }] },
+  { id: 'coup-de-boost', name: 'Coup de Boost', cardType: 'ACTION', domain: DOMAIN.TALENT_PERF, rarity: 1, cost: 2,
+    keywords: [], onPlay: [{ type: 'buffTarget', atk: 3, target: 'chosenAlly', duration: 'turn' }] },
+  { id: 'tableau-de-bord-predictif', name: 'Tableau de Bord Prédictif', cardType: 'ACTION', domain: DOMAIN.PILOTAGE_BI, rarity: 2, cost: 3,
+    keywords: [], onPlay: [{ type: 'peekOpponentHand' }, { type: 'reorderTopN', amount: 3 }] },
 ];
 
 const CARD_POOL = MINION_CARDS.concat(ACTION_CARDS);

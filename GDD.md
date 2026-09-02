@@ -163,8 +163,9 @@ Cette règle ne s'applique **qu'à l'affrontement direct** entre les deux cartes
 |---|---|
 | **PV du héros** | 30 |
 | **Plateau** | Jusqu'à **7 cartes en jeu** par joueur, plateau unique partagé (**pas de lanes séparées** — n'importe quelle carte peut cibler n'importe quelle carte adverse en jeu, sous réserve de Provocation). |
-| **Main de départ** | Joueur 1 (premier à jouer) : 3 cartes. Joueur 2 : 4 cartes + 1 jeton **"Audit Flash"** (coût 0, effet : gagnez 1 cristal de mana ce tour uniquement, jeton consommé après usage ou en fin de tour). |
-| **Pioche** | 1 carte au début de chaque tour (le tout premier tour du joueur 1 ne pioche pas, comme le veut la convention du genre). |
+| **Main de départ** | Joueur 1 (premier à jouer) : 3 cartes. Joueur 2 : 4 cartes, plus +1 cristal de mana ce tour uniquement à son premier tour (compensation classique du désavantage de ne pas jouer en premier). |
+| **Pioche** | 1 carte au début de chaque tour, y compris le tout premier tour de chaque joueur. |
+| **Pouvoir héroïque** | Chaque joueur reçoit automatiquement le pouvoir du domaine dominant de son deck (le plus représenté), sans étape de sélection. Coût 2-3 mana, utilisable une fois par tour. |
 | **Fatigue** | Si un joueur doit piocher alors que son deck est vide, il subit des dégâts directs au héros égaux à un compteur qui augmente de 1 à chaque pioche en fatigue (1ère pioche en fatigue = 1 dégât, 2ème = 2, 3ème = 3, etc., cumulatif sur toute la partie). |
 | **Attaque** | Chaque carte peut attaquer une fois par tour. Une carte qui vient d'être jouée ne peut pas attaquer ce tour-là, sauf si elle a Charge. Le héros n'attaque pas directement (pas de système d'arme en v1) : il agit uniquement via les cartes et leurs capacités. |
 | **Condition de victoire** | Le héros adverse tombe à 0 PV ou moins. Égalité si les deux héros tombent à 0 PV simultanément (ex. combat mutuel ou fatigue simultanée). |

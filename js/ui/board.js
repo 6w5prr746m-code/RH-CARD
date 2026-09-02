@@ -213,6 +213,7 @@ function initBoardUI() {
   });
   document.getElementById('ai-hero-target').addEventListener('click', onEnemyHeroClick);
   document.getElementById('end-turn-btn').addEventListener('click', () => { SFX.play('click'); handleEndTurn(); });
+  document.getElementById('hero-power-btn').addEventListener('click', onHeroPowerClick);
   document.getElementById('btn-back-to-builder').addEventListener('click', () => {
     if (gameState && !gameState.winner) {
       if (!confirm('Abandonner la partie en cours et retourner au deck builder ?')) return;
@@ -494,6 +495,24 @@ function onHandCardClick(uid) {
   if (gameState.winner) showGameOver();
 }
 
+function onHeroPowerClick() {
+  if (!canPlayerAct()) return;
+  const seat = humanSeat();
+  const before = captureSnapshot(gameState);
+  const beforeRects = captureRects();
+  const res = useHeroPower(gameState, seat);
+  selectedAttackerUid = null;
+  if (!res.ok) {
+    SFX.play('error');
+    flashError(res.error);
+    return;
+  }
+  SFX.play('synergy');
+  renderGame();
+  animateDiff(before, captureSnapshot(gameState), beforeRects);
+  if (gameState.winner) showGameOver();
+}
+
 function onPlayerBoardCardClick(uid) {
   if (!canPlayerAct()) return;
   const seat = humanSeat();
@@ -621,6 +640,10 @@ async function runAiTurnAnimated() {
         renderGame();
         animateDiff(before, captureSnapshot(gameState), beforeRects);
         if (step.card.cardId === 'peoplespheres') { showBanner('SYNCHRONISATION UNIVERSELLE (IA)', { epic: true }); spawnConfetti(20); }
+      } else if (step.type === 'power') {
+        SFX.play('synergy');
+        renderGame();
+        animateDiff(before, captureSnapshot(gameState), beforeRects);
       } else if (step.type === 'attack') {
         SFX.play('attack');
         if (skipRequested) {
@@ -705,6 +728,19 @@ function renderGame() {
   document.getElementById('end-turn-btn').disabled = !canPlayerAct();
   document.getElementById('end-turn-btn').classList.toggle('your-turn', canPlayerAct());
 
+  const power = HERO_POWERS[bottom.heroPowerDomain];
+  const powerBtn = document.getElementById('hero-power-btn');
+  if (power) {
+    const usable = canPlayerAct() && !bottom.heroPowerUsedThisTurn && power.cost <= bottom.mana;
+    powerBtn.classList.remove('hidden');
+    powerBtn.disabled = !usable;
+    powerBtn.classList.toggle('used', bottom.heroPowerUsedThisTurn);
+    powerBtn.innerHTML = `⚡<span class="hp-cost">${power.cost}</span>`;
+    powerBtn.title = `${power.label} (${power.cost} mana)\n${power.desc}`;
+  } else {
+    powerBtn.classList.add('hidden');
+  }
+
   renderSynergyPanel(bottom.board);
   checkSynergyToasts(bottomSeat, bottom.board);
   renderLog();
@@ -743,14 +779,6 @@ function miniCardHtml(state, ownerId, card, opts) {
 }
 
 function handCardHtml(state, card, seatId) {
-  if (card.isToken) {
-    return `
-      <div class="hand-card" data-uid="${card.uid}" style="--dcolor:#4fd1c5">
-        <div class="hc-cost">0</div>
-        <div class="hc-name">⚡ ${card.name}</div>
-        <div class="hc-ability">Jeton : gagnez 1 mana ce tour-ci.</div>
-      </div>`;
-  }
   const owner = state.players[seatId];
   const cost = computeCost(state, seatId, card, { consume: false });
   const isAction = card.cardType === 'ACTION';
@@ -935,7 +963,7 @@ let mulliganSelected = new Set();
 
 function aiAutoMulligan() {
   const ai = gameState.players.ai;
-  const swapUids = ai.hand.filter(c => !c.isToken && c.baseCost >= 4).map(c => c.uid);
+  const swapUids = ai.hand.filter(c => c.baseCost >= 4).map(c => c.uid);
   if (swapUids.length) mulligan(gameState, 'ai', swapUids);
 }
 

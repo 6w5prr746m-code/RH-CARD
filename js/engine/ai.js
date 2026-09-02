@@ -60,7 +60,33 @@ function aiPickFromReveal(revealed) {
 
 function* runAiTurnSteps(state) {
   yield* playAiCardsSteps(state);
+  if (!state.winner) yield* maybeUseHeroPowerStep(state);
   if (!state.winner) yield* runAiAttacksSteps(state);
+}
+
+// Runs after cards are played but before attacks, so a "this turn only" ATK
+// buff (Talent/Perf's power) still lands before the AI swings — and so a
+// draw/heal/DEF-buff power has already happened if it changes what's worth
+// attacking with. One heuristic per domain; skips a power that would do
+// nothing (healing at full HP, buffing an empty board).
+function* maybeUseHeroPowerStep(state) {
+  const p = state.players.ai;
+  if (p.heroPowerUsedThisTurn) return;
+  const power = HERO_POWERS[p.heroPowerDomain];
+  if (!power || power.cost > p.mana) return;
+
+  const worthwhile = {
+    [DOMAIN.PAIE_GA]: () => p.heroHp < p.heroMaxHp,
+    [DOMAIN.GTA]: () => p.board.length > 0,
+    [DOMAIN.RECRUTEMENT]: () => true,
+    [DOMAIN.FORMATION]: () => p.board.length > 0,
+    [DOMAIN.TALENT_PERF]: () => p.board.length > 0,
+    [DOMAIN.PILOTAGE_BI]: () => p.deck.length > 0,
+  }[p.heroPowerDomain];
+  if (!worthwhile || !worthwhile()) return;
+
+  const result = useHeroPower(state, 'ai');
+  yield { type: 'power', power, result };
 }
 
 function* playAiCardsSteps(state) {
@@ -71,53 +97,29 @@ function* playAiCardsSteps(state) {
   while (playedSomething && !state.winner && guard < 20) {
     guard++;
     playedSomething = false;
-    const affordable = c => c.isToken || computeCost(state, 'ai', c, { consume: false }) <= p.mana;
+    const affordable = c => computeCost(state, 'ai', c, { consume: false }) <= p.mana;
     const playable = p.hand.filter(affordable);
     if (playable.length === 0) break;
     if (settings.skipPlayChance > 0 && Math.random() < settings.skipPlayChance) break;
 
-    const token = playable.find(c => c.isToken);
-    if (token) {
-      const afterMana = p.mana + 1;
-      const unlocksMore = p.hand.some(c => !c.isToken &&
-        computeCost(state, 'ai', c, { consume: false }) > p.mana &&
-        computeCost(state, 'ai', c, { consume: false }) <= afterMana);
-      if (unlocksMore) {
-        const result = playCard(state, 'ai', token.uid);
-        playedSomething = true;
-        yield { type: 'play', card: token, result };
-        continue;
-      }
-    }
-
     if (p.board.length >= MAX_BOARD) {
       // No creature slot left, but Action cards don't need one.
-      const action = playable.find(c => !c.isToken && c.cardType === 'ACTION');
+      const action = playable.find(c => c.cardType === 'ACTION');
       if (action) {
         const result = playCard(state, 'ai', action.uid);
         playedSomething = true;
         yield { type: 'play', card: action, result };
-        continue;
-      }
-      if (token) {
-        const result = playCard(state, 'ai', token.uid);
-        playedSomething = true;
-        yield { type: 'play', card: token, result };
       }
       break;
     }
 
-    const nonToken = playable.filter(c => !c.isToken)
+    const sorted = playable
       .sort((a, b) => computeCost(state, 'ai', b, { consume: false }) - computeCost(state, 'ai', a, { consume: false }));
-    if (nonToken.length > 0) {
-      const card = nonToken[0];
+    if (sorted.length > 0) {
+      const card = sorted[0];
       const result = playCard(state, 'ai', card.uid);
       playedSomething = true;
       yield { type: 'play', card, result };
-    } else if (token) {
-      const result = playCard(state, 'ai', token.uid);
-      playedSomething = true;
-      yield { type: 'play', card: token, result };
     }
   }
 }

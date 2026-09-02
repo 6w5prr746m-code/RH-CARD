@@ -49,19 +49,6 @@ function makeCardInstance(cardId) {
   };
 }
 
-function makeAuditFlashToken() {
-  return {
-    uid: nextUid('tok'),
-    cardId: '__audit_flash__',
-    name: 'Audit Flash',
-    domain: null,
-    rarity: 'token',
-    baseCost: 0,
-    isToken: true,
-    keywords: new Set(),
-  };
-}
-
 // deckList: array of cardId strings, one entry per copy (length 25-30).
 function buildDeckInstances(deckList) {
   return deckList.map(makeCardInstance);
@@ -99,7 +86,25 @@ function createPlayerState(id, deckList) {
     recruitmentFirstDiscountUsed: false,
     pilotageDrawUpgradeUsed: false,
     pilotageSwapUsed: false,
+    heroPowerDomain: computeDominantDomain(deckList),
+    heroPowerUsedThisTurn: false,
   };
+}
+
+// The domain with the most copies in the deck decides which of the 6
+// HERO_POWERS a player gets — no separate "pick a hero" step. TRANSVERSAL
+// (PeopleSpheres) is excluded from candidacy since it's at most 1 copy and
+// has no power of its own; ties keep SYNERGY_DOMAINS' order (deterministic).
+function computeDominantDomain(deckList) {
+  const counts = {};
+  for (const d of SYNERGY_DOMAINS) counts[d] = 0;
+  for (const id of deckList) {
+    const card = CARDS_BY_ID[id];
+    if (card && counts[card.domain] !== undefined) counts[card.domain]++;
+  }
+  let best = SYNERGY_DOMAINS[0];
+  for (const d of SYNERGY_DOMAINS) if (counts[d] > counts[best]) best = d;
+  return best;
 }
 
 function createStatsBucket() {
@@ -123,13 +128,23 @@ function createGameState(playerDeckList, aiDeckList) {
     pendingReveal: null,
   };
 
+  // Both players draw every turn from equal-size decks (see startTurn), but
+  // simulation kept showing a strong first-player edge (~60-65% win rate)
+  // even after that fix: going first means resolving your whole turn —
+  // including combat — before the second player gets to act at all, and
+  // with games now typically decided by combat well before fatigue, that
+  // recurring per-round tempo edge dominates. The classic going-second
+  // compensation (Hearthstone's extra card + Coin) tested closest to fair
+  // (~53/47 over hundreds of simulated games): +1 opening card here, plus
+  // the one-time mana bump in startTurn(). The resulting 1-card deck-size
+  // gap is deliberately small and one-directional, unlike the old
+  // AI-only mana-token mechanic this replaced, which touched mana every
+  // game instead of just the opening hand.
   state.players.player.hand = state.players.player.deck.splice(0, 3);
-  const aiHand = state.players.ai.deck.splice(0, 4);
-  aiHand.push(makeAuditFlashToken());
-  state.players.ai.hand = aiHand;
+  state.players.ai.hand = state.players.ai.deck.splice(0, 4);
 
   log(state, 'La partie commence. Vous jouez en premier.');
-  startTurn(state, 'player', true);
+  startTurn(state, 'player');
   return state;
 }
 
@@ -144,23 +159,33 @@ function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
 
 // ---------------------------------------------------------------- turn flow
 
-function startTurn(state, playerId, isVeryFirstTurn) {
+// Both players draw every turn, including the very first (unlike the classic
+// "no draw going first" convention — this game's going-second compensation
+// is the opening hand size + mana bump below, kept separate from draws so
+// deck sizes stay close and fatigue timing doesn't skew hard either way).
+function startTurn(state, playerId) {
   const p = state.players[playerId];
   p.maxMana = clamp(p.maxMana + 1, 0, MAX_MANA);
   p.mana = p.maxMana;
+  if (playerId !== state.firstPlayer && p.maxMana === 1) {
+    // Classic "coin" going-second compensation: +1 mana on the second
+    // player's very first turn only (never touches maxMana, so it can't
+    // compound) — see the balance notes above createGameState for the
+    // opening-hand half of this fix and why both were needed.
+    p.mana = clamp(p.mana + 1, 0, p.maxMana + 1);
+  }
   p.activeDiscounts = [];
   p.recruitmentFirstDiscountUsed = false;
   p.pilotageDrawUpgradeUsed = false;
   p.pilotageSwapUsed = false;
+  p.heroPowerUsedThisTurn = false;
 
   for (const c of p.board) {
     c.summoningSick = false;
     c.hasAttackedThisTurn = false;
   }
 
-  if (!isVeryFirstTurn) {
-    drawCards(state, playerId, 1);
-  }
+  drawCards(state, playerId, 1);
 
   applyTurnStartSynergy(state, playerId);
   applyTurnStartCardAuras(state, playerId);
@@ -186,7 +211,7 @@ function endTurn(state, playerId) {
   const next = opponentOf(playerId);
   state.activePlayer = next;
   if (next === state.firstPlayer) state.turnNumber++;
-  startTurn(state, next, false);
+  startTurn(state, next);
 }
 
 function applyTurnStartSynergy(state, playerId) {
@@ -413,14 +438,6 @@ function playCard(state, playerId, handUid) {
   if (idx === -1) return { ok: false, error: 'Carte introuvable en main.' };
   const card = p.hand[idx];
 
-  if (card.isToken) {
-    p.hand.splice(idx, 1);
-    p.mana = clamp(p.mana + 1, 0, p.maxMana + 1);
-    p.graveyard.push(card);
-    log(state, `${playerId === 'player' ? 'Vous' : "L'IA"} activez Audit Flash (+1 mana ce tour).`);
-    return { ok: true };
-  }
-
   const cost = computeCost(state, playerId, card, { consume: false });
   if (cost > p.mana) return { ok: false, error: 'Mana insuffisant.' };
   const isAction = card.cardType === 'ACTION';
@@ -440,6 +457,26 @@ function playCard(state, playerId, handUid) {
   log(state, `${playerId === 'player' ? 'Vous jouez' : "L'IA joue"} ${card.name}.`);
 
   const job = { type: 'onPlay', effects: (card.onPlay || []).slice(), stepIndex: 0, playerId, sourceCard: card };
+  state.pendingJob = job;
+  const result = advanceJob(state);
+  checkStateBasedActions(state);
+  checkWinCondition(state);
+  return { ok: true, jobResult: result };
+}
+
+function useHeroPower(state, playerId) {
+  if (state.winner || state.pendingChoice) return { ok: false, error: 'Action indisponible.' };
+  const p = state.players[playerId];
+  if (p.heroPowerUsedThisTurn) return { ok: false, error: 'Pouvoir déjà utilisé ce tour.' };
+  const power = HERO_POWERS[p.heroPowerDomain];
+  if (!power) return { ok: false, error: 'Pas de pouvoir héroïque.' };
+  if (power.cost > p.mana) return { ok: false, error: 'Mana insuffisant.' };
+
+  p.mana -= power.cost;
+  p.heroPowerUsedThisTurn = true;
+  log(state, `${playerId === 'player' ? 'Vous utilisez' : "L'IA utilise"} le pouvoir héroïque : ${power.label}.`);
+
+  const job = { type: 'heroPower', effects: power.effects.slice(), stepIndex: 0, playerId, sourceCard: null };
   state.pendingJob = job;
   const result = advanceJob(state);
   checkStateBasedActions(state);
@@ -519,7 +556,7 @@ function tryApplyEffect(state, job, effect) {
       if (targets.length === 0) return { status: 'applied' };
       if (targets.length === 1 || isAi) {
         const chosen = isAi ? aiPickBuffTarget(targets) : targets[0];
-        applyPermanentBuff(chosen, effect);
+        applyBuff(chosen, effect);
         return { status: 'applied' };
       }
       return {
@@ -530,15 +567,7 @@ function tryApplyEffect(state, job, effect) {
     case 'buffAllDomain': {
       const domain = effect.domain === 'self' && source ? source.domain : effect.domain;
       for (const c of p.board) {
-        if (c.domain === domain) {
-          if (effect.duration === 'turn') {
-            const buff = { atk: effect.atk || 0, def: effect.def || 0, hp: effect.hp || 0 };
-            c.tempBuffs.push(buff);
-            c.currentAtk += buff.atk; c.currentDef += buff.def; c.currentHp += buff.hp; c.maxHp += buff.hp;
-          } else {
-            applyPermanentBuff(c, effect);
-          }
-        }
+        if (c.domain === domain) applyBuff(c, effect);
       }
       return { status: 'applied' };
     }
@@ -704,12 +733,25 @@ function applyPermanentBuff(card, effect) {
   card.maxHp += effect.hp || 0;
 }
 
+// Shared by buffTarget/buffAllDomain: a "turn" duration goes through
+// tempBuffs (stripped off in endTurn — see engine.js's endTurn), anything
+// else is a permanent stat change.
+function applyBuff(card, effect) {
+  if (effect.duration === 'turn') {
+    const buff = { atk: effect.atk || 0, def: effect.def || 0, hp: effect.hp || 0 };
+    card.tempBuffs.push(buff);
+    card.currentAtk += buff.atk; card.currentDef += buff.def; card.currentHp += buff.hp; card.maxHp += buff.hp;
+  } else {
+    applyPermanentBuff(card, effect);
+  }
+}
+
 function applyChoiceSelection(state, choice, selection) {
   const p = state.players[choice.playerId];
   switch (choice.kind) {
     case 'selectBoardCard': {
       const target = p.board.find(c => c.uid === selection);
-      if (target) applyPermanentBuff(target, choice.effect);
+      if (target) applyBuff(target, choice.effect);
       return;
     }
     case 'chooseFromReveal': {
