@@ -214,6 +214,7 @@ function initBoardUI() {
   document.getElementById('ai-hero-target').addEventListener('click', onEnemyHeroClick);
   document.getElementById('end-turn-btn').addEventListener('click', () => { SFX.play('click'); handleEndTurn(); });
   document.getElementById('hero-power-btn').addEventListener('click', onHeroPowerClick);
+  document.getElementById('signature-btn').addEventListener('click', onSignatureAbilityClick);
   document.getElementById('btn-back-to-builder').addEventListener('click', () => {
     if (gameState && !gameState.winner) {
       if (!confirm('Abandonner la partie en cours et retourner au deck builder ?')) return;
@@ -526,6 +527,30 @@ function onHeroPowerClick() {
   if (gameState.winner) showGameOver();
 }
 
+function onSignatureAbilityClick() {
+  if (!canPlayerAct()) return;
+  const seat = humanSeat();
+  const before = captureSnapshot(gameState);
+  const beforeRects = captureRects();
+  const ability = SIGNATURE_ABILITIES[gameState.players[seat].heroPowerDomain];
+  const res = useSignatureAbility(gameState, seat);
+  selectedAttackerUid = null;
+  if (!res.ok) {
+    SFX.play('error');
+    flashError(res.error);
+    return;
+  }
+  SFX.play('legendary');
+  const sigBtn = document.getElementById('signature-btn');
+  pulseGlow(sigBtn);
+  spawnPowerBurst(sigBtn.getBoundingClientRect());
+  if (ability) showBanner(ability.label.toUpperCase(), { epic: true });
+  shakeScreen(5, 350);
+  renderGame();
+  animateDiff(before, captureSnapshot(gameState), beforeRects);
+  if (gameState.winner) showGameOver();
+}
+
 function onPlayerBoardCardClick(uid) {
   if (!canPlayerAct()) return;
   const seat = humanSeat();
@@ -660,6 +685,13 @@ async function runAiTurnAnimated() {
         spawnPowerBurst(heroRect('ai'));
         renderGame();
         animateDiff(before, captureSnapshot(gameState), beforeRects);
+      } else if (step.type === 'signature') {
+        SFX.play('legendary');
+        spawnPowerBurst(heroRect('ai'));
+        if (step.ability) showBanner(`${step.ability.label.toUpperCase()} (IA)`, { epic: true });
+        shakeScreen(5, 350);
+        renderGame();
+        animateDiff(before, captureSnapshot(gameState), beforeRects);
       } else if (step.type === 'attack') {
         SFX.play('attack');
         if (skipRequested) {
@@ -759,6 +791,21 @@ function renderGame() {
     powerBtn.title = `${power.label} (${power.cost} mana)\n${power.desc}`;
   } else {
     powerBtn.classList.add('hidden');
+  }
+
+  const signature = SIGNATURE_ABILITIES[bottom.heroPowerDomain];
+  const sigBtn = document.getElementById('signature-btn');
+  if (signature) {
+    const usable = canPlayerAct() && !bottom.signatureUsedThisGame && signature.cost <= bottom.mana;
+    sigBtn.classList.remove('hidden');
+    sigBtn.disabled = !usable;
+    sigBtn.classList.toggle('used', bottom.signatureUsedThisGame);
+    sigBtn.innerHTML = `💎<span class="sig-cost">${signature.cost}</span>`;
+    sigBtn.title = bottom.signatureUsedThisGame
+      ? `${signature.label} — déjà utilisée cette partie.`
+      : `${signature.label} (${signature.cost} mana)\n${signature.desc}`;
+  } else {
+    sigBtn.classList.add('hidden');
   }
 
   renderSynergyPanel(bottom.board);
@@ -1243,7 +1290,7 @@ function showGameOver() {
   renderHpChart(document.getElementById('go-hp-chart'), gameState.hpHistory);
   document.getElementById('gameover-rematch').addEventListener('click', () => {
     if (isCampaign && lastPlayerDeckList) startCampaignGame(lastPlayerDeckList, gameState.campaignStageIndex);
-    else if (local && lastLocalDecks) startLocalGame(lastLocalDecks[0], lastLocalDecks[1]);
+    else if (local && lastLocalDecks) startLocalGame(lastLocalDecks[0], lastLocalDecks[1], lastLocalAvatars[0], lastLocalAvatars[1]);
     else if (lastPlayerDeckList) startNewGame(lastPlayerDeckList);
   });
   const nextStageBtn = document.getElementById('gameover-next-stage');

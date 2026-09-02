@@ -32,6 +32,9 @@
           <option value="hard">Difficile</option>
         </select>
       </label>
+      <label id="avatar-label" style="font-size:12px; color:var(--text-dim);" title="Détermine votre pouvoir héroïque et votre capacité signature (une fois par partie)">Avatar :
+        <select id="avatar-select"></select>
+      </label>
       <button id="btn-theme-toggle-builder" class="icon-btn theme-toggle-btn" title="Basculer thème clair/sombre">🌙</button>
       <button id="btn-options-builder" class="icon-btn" title="Options">⚙️</button>
       <button id="btn-achievements" class="icon-btn" title="Succès">🏆</button>
@@ -93,6 +96,7 @@
     <div class="hero-row self">
       <div class="hero-target" id="player-hero-target">🏢 Héros</div>
       <button class="hero-power-btn" id="hero-power-btn" title="Pouvoir héroïque">⚡</button>
+      <button class="signature-btn" id="signature-btn" title="Capacité signature">💎</button>
       <div class="hero-info">
         <div style="color:var(--text-dim); font-size:12px;">Deck: <span id="player-deck-count">0</span></div>
         <div class="hero-mana" id="player-mana">0 / 0 mana</div>

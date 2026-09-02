@@ -72,6 +72,7 @@ function aiPickFromReveal(revealed) {
 function* runAiTurnSteps(state) {
   yield* playAiCardsSteps(state);
   if (!state.winner) yield* maybeUseHeroPowerStep(state);
+  if (!state.winner) yield* maybeUseSignatureAbilityStep(state);
   if (!state.winner) yield* runAiAttacksSteps(state);
 }
 
@@ -98,6 +99,32 @@ function* maybeUseHeroPowerStep(state) {
 
   const result = useHeroPower(state, 'ai');
   yield { type: 'power', power, result };
+}
+
+// Once-per-game, so the AI is pickier than for its hero power: never on
+// turn 1, and each domain waits for the situation the ability actually
+// pays off in (badly hurt for a heal, an established board for a
+// permanent domain buff, a thin hand for a big draw) rather than firing
+// the moment it's affordable.
+function* maybeUseSignatureAbilityStep(state) {
+  const p = state.players.ai;
+  if (p.signatureUsedThisGame || state.turnNumber < 2) return;
+  const ability = SIGNATURE_ABILITIES[p.heroPowerDomain];
+  if (!ability || ability.cost > p.mana) return;
+
+  const countDomain = (d) => p.board.filter(c => c.domain === d).length;
+  const worthwhile = {
+    [DOMAIN.PAIE_GA]: () => p.heroHp <= p.heroMaxHp * 0.7,
+    [DOMAIN.GTA]: () => countDomain(DOMAIN.GTA) >= 2,
+    [DOMAIN.RECRUTEMENT]: () => p.hand.length <= 5,
+    [DOMAIN.FORMATION]: () => countDomain(DOMAIN.FORMATION) >= 2,
+    [DOMAIN.TALENT_PERF]: () => countDomain(DOMAIN.TALENT_PERF) >= 2 && state.turnNumber >= 4,
+    [DOMAIN.PILOTAGE_BI]: () => p.deck.length >= 5,
+  }[p.heroPowerDomain];
+  if (!worthwhile || !worthwhile()) return;
+
+  const result = useSignatureAbility(state, 'ai');
+  yield { type: 'signature', ability, result };
 }
 
 function* playAiCardsSteps(state) {

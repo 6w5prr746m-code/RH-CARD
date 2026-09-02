@@ -55,6 +55,23 @@ const HERO_POWERS = {
   [DOMAIN.PILOTAGE_BI]: { label: "Coup d'Œil", cost: 2, desc: 'Regardez le dessus de votre pioche.', effects: [{ type: 'peekTopDeck', amount: 1 }] },
 };
 
+// Avatars: the player picks one of the 6 domains explicitly in the deck
+// builder (see avatarDomain in engine.js's createPlayerState) instead of
+// relying on computeDominantDomain — that choice both decides which
+// HERO_POWERS entry the player gets and unlocks the matching signature
+// ability below: a single, more powerful effect usable once per GAME
+// (not per turn), reusing the same effect engine as everything else.
+// The AI never picks one — it keeps using its deck's auto-detected
+// dominant domain for both its hero power and its signature ability.
+const SIGNATURE_ABILITIES = {
+  [DOMAIN.PAIE_GA]: { label: 'Plan de Sauvetage', cost: 4, desc: 'Votre héros récupère 10 PV. Une fois par partie.', effects: [{ type: 'heroHeal', amount: 10, target: 'self' }] },
+  [DOMAIN.GTA]: { label: 'Verrouillage Total', cost: 4, desc: '+4 DEF et +2 PV permanents à toutes vos cartes GTA. Une fois par partie.', effects: [{ type: 'buffAllDomain', def: 4, hp: 2, domain: 'self' }] },
+  [DOMAIN.RECRUTEMENT]: { label: 'Recrutement de Masse', cost: 4, desc: 'Piochez 4 cartes. Une fois par partie.', effects: [{ type: 'draw', amount: 4 }] },
+  [DOMAIN.FORMATION]: { label: 'Formation Accélérée', cost: 4, desc: '+2/+2/+2 permanents à toutes vos cartes Formation. Une fois par partie.', effects: [{ type: 'buffAllDomain', atk: 2, def: 2, hp: 2, domain: 'self' }] },
+  [DOMAIN.TALENT_PERF]: { label: 'Prime Exceptionnelle', cost: 4, desc: '+4 ATK ce tour à toutes vos cartes Talent/Performance. Une fois par partie.', effects: [{ type: 'buffAllDomain', atk: 4, domain: 'self', duration: 'turn' }] },
+  [DOMAIN.PILOTAGE_BI]: { label: 'Audit Complet', cost: 3, desc: 'Regardez les 5 cartes du dessus de votre pioche, gardez-en 1. Une fois par partie.', effects: [{ type: 'drawKeepBest', amount: 5, keep: 1 }] },
+};
+
 // rarity: 1 = ★, 2 = ★★, 3 = ★★★, 'L' = Légendaire (∞)
 
 const MINION_CARDS = [

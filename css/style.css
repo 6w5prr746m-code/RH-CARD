@@ -358,6 +358,30 @@ body[data-arena="grove"] #screen-game {
 }
 .hero-power-btn.hidden { display: none; }
 
+.signature-btn {
+  position: relative; width: 44px; height: 44px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #e6d2ff, #7d3bd1 70%);
+  border: 2px solid #7d3bd1; color: #fff; font-size: 18px; font-weight: 800;
+  display: flex; align-items: center; justify-content: center; padding: 0; cursor: pointer;
+  box-shadow: 0 0 10px rgba(125,59,209,0.5);
+}
+.signature-btn:hover:not(:disabled) { transform: scale(1.06); border-color: #7d3bd1; color: #fff; }
+.signature-btn:disabled { filter: grayscale(0.8); opacity: 0.55; cursor: not-allowed; box-shadow: none; }
+.signature-btn.used { filter: grayscale(1); opacity: 0.4; }
+.signature-btn .sig-cost {
+  position: absolute; bottom: -6px; right: -6px;
+  background: #2050a0; color: #fff; border-radius: 50%;
+  width: 18px; height: 18px; display: flex; align-items: center; justify-content: center;
+  font-size: 10px; font-weight: 700; border: 2px solid var(--bg);
+}
+.signature-btn.hidden { display: none; }
+.signature-btn.fx-glow { animation: signatureGlow 0.65s ease-out; }
+@keyframes signatureGlow {
+  0% { box-shadow: 0 0 10px rgba(125, 59, 209, 0.5); }
+  40% { box-shadow: 0 0 46px 20px rgba(125, 59, 209, 0.95); }
+  100% { box-shadow: 0 0 10px rgba(125, 59, 209, 0.5); }
+}
+
 .board-row {
   flex: 1;
   display: flex;
@@ -948,7 +972,7 @@ body[data-arena="grove"] #screen-game {
   .hero-row { flex-wrap: wrap; gap: 8px; padding: 8px 12px; }
   .hero-info { flex-wrap: wrap; gap: 6px; }
   .hero-hp, .hero-mana { font-size: 13px; padding: 3px 8px; }
-  .hero-power-btn { width: 36px; height: 36px; font-size: 15px; }
+  .hero-power-btn, .signature-btn { width: 36px; height: 36px; font-size: 15px; }
 
   .mini-card { width: 74px; min-height: 96px; font-size: 10px; }
   .hand-card { width: 82px; min-height: 130px; font-size: 10px; }

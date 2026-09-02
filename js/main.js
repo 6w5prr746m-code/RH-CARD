@@ -2,10 +2,23 @@
 
 let lastPlayerDeckList = null;
 let lastLocalDecks = null; // [p1DeckList, p2DeckList], for local 2p rematch
+let lastLocalAvatars = null; // [p1AvatarDomain, p2AvatarDomain], alongside lastLocalDecks
 
 let appMode = 'vsAI'; // 'vsAI' | 'local2p' | 'campaign'
 let localP1DeckList = null; // set once Player 1 confirms their deck in local2p flow
+let localP1AvatarDomain = null; // captured alongside localP1DeckList
 let selectedCampaignStageIndex = 0;
+// '' means "no override" — createPlayerState falls back to the deck's
+// auto-detected dominant domain, exactly as it did before avatars existed.
+// That stays the default for anyone who never touches the selector.
+let selectedAvatarDomain = localStorage.getItem('rhcard_avatar_domain') || '';
+
+function renderAvatarSelect() {
+  const select = document.getElementById('avatar-select');
+  select.innerHTML = '<option value="">🎲 Auto (domaine dominant)</option>' +
+    SYNERGY_DOMAINS.map(d => `<option value="${d}">${DOMAIN_ICONS[d]} ${DOMAIN_LABELS[d]}</option>`).join('');
+  select.value = selectedAvatarDomain;
+}
 
 function showScreen(name) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
@@ -20,6 +33,7 @@ function showScreen(name) {
 function setAppMode(mode) {
   appMode = mode;
   localP1DeckList = null;
+  localP1AvatarDomain = null;
   builderState.counts = {};
   document.getElementById('mode-vsai').classList.toggle('active', mode === 'vsAI');
   document.getElementById('mode-local2p').classList.toggle('active', mode === 'local2p');
@@ -101,14 +115,17 @@ function handleStartGameClick() {
 
   if (localP1DeckList === null) {
     localP1DeckList = list;
+    localP1AvatarDomain = selectedAvatarDomain;
     builderState.counts = {};
     renderPool();
     renderDeckPanel();
     updateDeckBuilderHeaderForMode();
   } else {
     const p1 = localP1DeckList;
+    const p1Avatar = localP1AvatarDomain;
     localP1DeckList = null;
-    startLocalGame(p1, list);
+    localP1AvatarDomain = null;
+    startLocalGame(p1, list, p1Avatar, selectedAvatarDomain);
   }
 }
 
@@ -119,7 +136,7 @@ function startNewGame(playerDeckList) {
   setAiDifficulty(document.getElementById('ai-difficulty-select').value);
   localStorage.setItem('rhcard_ai_difficulty', AI_DIFFICULTY);
   const aiDeckList = buildAiDeck();
-  gameState = createGameState(playerDeckList, aiDeckList);
+  gameState = createGameState(playerDeckList, aiDeckList, selectedAvatarDomain);
   gameState.mode = 'vsAI';
   selectedAttackerUid = null;
   inputLocked = false;
@@ -136,7 +153,7 @@ function startCampaignGame(playerDeckList, stageIndex) {
   lastLocalDecks = null;
   setAiDifficulty(stage.difficulty);
   const aiDeckList = buildCampaignDeck(stage);
-  gameState = createGameState(playerDeckList, aiDeckList);
+  gameState = createGameState(playerDeckList, aiDeckList, selectedAvatarDomain);
   gameState.mode = 'vsAI';
   gameState.campaignStageIndex = stageIndex;
   selectedAttackerUid = null;
@@ -147,11 +164,12 @@ function startCampaignGame(playerDeckList, stageIndex) {
   startMulliganPhase();
 }
 
-function startLocalGame(p1DeckList, p2DeckList) {
+function startLocalGame(p1DeckList, p2DeckList, p1AvatarDomain, p2AvatarDomain) {
   clearSavedGameState();
   lastLocalDecks = [p1DeckList.slice(), p2DeckList.slice()];
+  lastLocalAvatars = [p1AvatarDomain, p2AvatarDomain];
   lastPlayerDeckList = null;
-  gameState = createGameState(p1DeckList, p2DeckList);
+  gameState = createGameState(p1DeckList, p2DeckList, p1AvatarDomain, p2AvatarDomain);
   gameState.mode = 'local2p';
   selectedAttackerUid = null;
   inputLocked = false;
@@ -213,6 +231,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const savedDifficulty = localStorage.getItem('rhcard_ai_difficulty');
   if (savedDifficulty) document.getElementById('ai-difficulty-select').value = savedDifficulty;
+
+  renderAvatarSelect();
+  document.getElementById('avatar-select').addEventListener('change', (e) => {
+    SFX.play('tabSwitch');
+    selectedAvatarDomain = e.target.value;
+    localStorage.setItem('rhcard_avatar_domain', selectedAvatarDomain);
+  });
 
   document.addEventListener('click', function unlockAudioOnce() {
     SFX.unlock();

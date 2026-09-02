@@ -70,7 +70,12 @@ function validateDeck(deckList) {
   return errors;
 }
 
-function createPlayerState(id, deckList) {
+// avatarDomain: explicit domain choice from the deck builder's avatar picker
+// (human players only — see js/data/cards.js's SIGNATURE_ABILITIES comment).
+// Falls back to the auto-detected dominant domain when omitted, exactly as
+// before this existed, so AI opponents and any caller that doesn't pass one
+// are unaffected.
+function createPlayerState(id, deckList, avatarDomain) {
   return {
     id,
     heroHp: HERO_MAX_HP,
@@ -86,9 +91,10 @@ function createPlayerState(id, deckList) {
     recruitmentFirstDiscountUsed: false,
     pilotageDrawUpgradeUsed: false,
     pilotageSwapUsed: false,
-    heroPowerDomain: computeDominantDomain(deckList),
+    heroPowerDomain: (avatarDomain && SYNERGY_DOMAINS.includes(avatarDomain)) ? avatarDomain : computeDominantDomain(deckList),
     heroPowerUsedThisTurn: false,
     catchUpActive: false,
+    signatureUsedThisGame: false,
   };
 }
 
@@ -112,14 +118,16 @@ function createStatsBucket() {
   return { damageDealt: 0, damageTaken: 0, healingDone: 0, cardsPlayed: 0, damageByCard: {}, peakSynergyTier: {} };
 }
 
-function createGameState(playerDeckList, aiDeckList) {
+function createGameState(playerDeckList, aiDeckList, playerAvatarDomain, aiAvatarDomain) {
   const state = {
     turnNumber: 1,
     activePlayer: 'player',
     firstPlayer: 'player',
     players: {
-      player: createPlayerState('player', playerDeckList),
-      ai: createPlayerState('ai', aiDeckList),
+      player: createPlayerState('player', playerDeckList, playerAvatarDomain),
+      // aiAvatarDomain only matters in local2p (both seats are human-picked
+      // avatars); a real AI opponent never passes one and keeps auto-detect.
+      ai: createPlayerState('ai', aiDeckList, aiAvatarDomain),
     },
     stats: { player: createStatsBucket(), ai: createStatsBucket() },
     log: [],
@@ -501,6 +509,29 @@ function useHeroPower(state, playerId) {
   log(state, `${playerId === 'player' ? 'Vous utilisez' : "L'IA utilise"} le pouvoir héroïque : ${power.label}.`);
 
   const job = { type: 'heroPower', effects: power.effects.slice(), stepIndex: 0, playerId, sourceCard: null };
+  state.pendingJob = job;
+  const result = advanceJob(state);
+  checkStateBasedActions(state);
+  checkWinCondition(state);
+  return { ok: true, jobResult: result };
+}
+
+// A once-per-GAME (not per-turn) counterpart to useHeroPower — same domain,
+// same job/effect pipeline, but SIGNATURE_ABILITIES entries hit noticeably
+// harder since the usedThisGame flag never resets.
+function useSignatureAbility(state, playerId) {
+  if (state.winner || state.pendingChoice) return { ok: false, error: 'Action indisponible.' };
+  const p = state.players[playerId];
+  if (p.signatureUsedThisGame) return { ok: false, error: 'Capacité signature déjà utilisée cette partie.' };
+  const ability = SIGNATURE_ABILITIES[p.heroPowerDomain];
+  if (!ability) return { ok: false, error: 'Pas de capacité signature.' };
+  if (ability.cost > p.mana) return { ok: false, error: 'Mana insuffisant.' };
+
+  p.mana -= ability.cost;
+  p.signatureUsedThisGame = true;
+  log(state, `${playerId === 'player' ? 'Vous activez' : "L'IA active"} sa capacité signature : ${ability.label}.`);
+
+  const job = { type: 'signatureAbility', effects: ability.effects.slice(), stepIndex: 0, playerId, sourceCard: null };
   state.pendingJob = job;
   const result = advanceJob(state);
   checkStateBasedActions(state);
