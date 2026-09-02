@@ -2,8 +2,9 @@
 
 One image-generation prompt per card (97 total), for an external image model
 (Midjourney, DALL-E, Gemini/"nano banana", Stable Diffusion, etc.). Generate
-each image, then drop the result at `art/<card-id>.png` and add the id to
-`REAL_ART_IDS` in `js/data/cardart.js` — the game automatically prefers the
+each image, then drop the result at `art/<card-id>.jpg` (preferred — much
+lighter than PNG for this kind of painterly art; `.png`/`.webp` also work)
+and add the id to `REAL_ART_IDS` in `js/data/cardart.js` — the game automatically prefers the
 real image over the generative placeholder for that card, and falls back to
 the placeholder automatically if the file is ever missing or fails to load.
 

@@ -4,19 +4,22 @@
 //    abstract "corporate tech" panel — domain-colored gradient + procedural
 //    motif + the domain icon. Same id always renders the same art, so it's
 //    stable across re-renders/sessions, and it needs no external assets.
-// 2. Real illustration: a PNG dropped at art/<card-id>.png. To switch a card
-//    over, add its id to REAL_ART_IDS below — nothing else needs touching.
-//    If the file is missing or fails to load, the <img> automatically falls
-//    back to the generative art via onerror, so a bad/missing drop never
-//    breaks the layout.
+// 2. Real illustration: an image dropped at art/<card-id>.<ext>. To switch a
+//    card over, add its id -> extension to REAL_ART_IDS below — nothing else
+//    needs touching. If the file is missing or fails to load, the <img>
+//    automatically falls back to the generative art via onerror, so a bad/
+//    missing drop never breaks the layout.
 //
 // cardArtMarkup(card) is the only entry point used by every template
 // (card-tile, hand-card, mini-card, card-zoom).
 
-// Card ids with a real illustration at art/<id>.png. Empty until artwork is
-// generated and dropped in — see docs/card-art-prompts.md for the per-card
-// prompts used to generate them externally.
-const REAL_ART_IDS = new Set([
+// Card id -> file extension for cards with a real illustration at
+// art/<id>.<ext> (jpg preferred — much lighter than png for painterly art;
+// png/webp also supported). Empty until artwork is generated and dropped in
+// — see docs/card-art-prompts.md for the per-card prompts used to generate
+// them externally.
+const REAL_ART_IDS = new Map([
+  ['peoplespheres', 'jpg'],
 ]);
 
 function hashStringToSeed(str) {
@@ -184,7 +187,7 @@ function cardArtMarkup(card) {
   if (_artCache[id]) return _artCache[id];
 
   const markup = REAL_ART_IDS.has(id)
-    ? `<img class="card-art-img" src="art/${id}.png" alt="" loading="lazy" onerror="this.outerHTML=cardArtFallbackSvg('${id}');">`
+    ? `<img class="card-art-img" src="art/${id}.${REAL_ART_IDS.get(id)}" alt="" loading="lazy" onerror="this.outerHTML=cardArtFallbackSvg('${id}');">`
     : generativeCardArtSvg(card);
 
   _artCache[id] = markup;
