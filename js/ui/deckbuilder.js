@@ -218,15 +218,19 @@ function cardTileHtml(card) {
   const color = DOMAIN_COLORS[card.domain] || '#666';
   const isAction = card.cardType === 'ACTION';
   return `
-    <div class="card-tile ${rarityClass(card.rarity)} ${maxed ? 'maxed' : ''}" data-id="${card.id}" style="--dcolor:${color}">
+    <div class="card-tile card-face ${rarityClass(card.rarity)} ${maxed ? 'maxed' : ''}" data-id="${card.id}" style="--dcolor:${color}">
       <div class="card-art">${cardArtMarkup(card)}</div>
-      <div class="cost-badge">${card.cost}</div>
+      <div class="card-art-scrim"></div>
       ${count > 0 ? `<div class="count-badge">×${count}</div>` : ''}
-      <div class="name"><span class="domain-icon">${DOMAIN_ICONS[card.domain] || ''}</span>${card.name}</div>
-      <div class="stars">${rarityLabel(card.rarity)} · ${DOMAIN_LABELS[card.domain]}${isAction ? ' · <span class="action-tag">⚡ Action</span>' : ''} · <span class="owned-tag">possédé ${owned}</span></div>
-      ${isAction ? '' : `<div class="statline"><span>${card.atk} ATK</span><span>${card.def} DEF</span><span>${card.hp} HP</span></div>`}
-      <div class="ability">${cardAbilityText(card)}</div>
-      ${card.pointFaible ? '<div class="pf-tag">Point Faible</div>' : ''}
+      <div class="cf-top">
+        <span class="cf-name"><span class="domain-icon">${DOMAIN_ICONS[card.domain] || ''}</span>${card.name}</span>
+        <span class="cf-cost">${card.cost}</span>
+      </div>
+      <div class="cf-bottom">
+        <div class="cf-meta">${rarityLabel(card.rarity)} · ${DOMAIN_LABELS[card.domain]}${isAction ? ' · ⚡' : ''} · possédé ${owned}</div>
+        ${isAction ? '' : `<div class="cf-stats"><span class="mc-atk">${card.atk}</span><span class="mc-def">${card.def}</span><span class="mc-hp">${card.hp}</span></div>`}
+        ${card.pointFaible ? '<div class="cf-pf">⚠ Point Faible</div>' : ''}
+      </div>
     </div>`;
 }
 

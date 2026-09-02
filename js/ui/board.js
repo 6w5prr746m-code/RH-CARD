@@ -78,25 +78,25 @@ function cardZoomHtml(card, { closable } = {}) {
   const maxHp = card.maxHp ?? card.hp;
   const cost = card.baseCost ?? card.cost;
   return `
-    <div class="card-zoom ${rarityClass(card.rarity)}" style="--dcolor:${color}">
+    <div class="card-zoom card-face ${rarityClass(card.rarity)}" style="--dcolor:${color}">
       ${closable ? '<button class="card-zoom-close" aria-label="Fermer">✕</button>' : ''}
       <div class="card-art">${cardArtMarkup(card)}</div>
-      <div class="cz-header">
-        <span class="domain-icon" style="font-size:24px;">${DOMAIN_ICONS[card.domain] || ''}</span>
-        <div>
-          <div class="cz-name">${card.name}</div>
-          <div class="cz-sub">${rarityLabel(card.rarity)} · ${DOMAIN_LABELS[card.domain] || ''}${isAction ? ' · <span class="action-tag">⚡ Action</span>' : ''}</div>
-        </div>
-        <div class="cz-cost">${cost}</div>
+      <div class="card-art-scrim"></div>
+      <div class="cf-top">
+        <span class="cf-name"><span class="domain-icon">${DOMAIN_ICONS[card.domain] || ''}</span>${card.name}</span>
+        <span class="cf-cost">${cost}</span>
       </div>
-      ${isAction ? '' : `
-      <div class="cz-stats">
-        <div><span class="mc-atk">${atk}</span>ATK</div>
-        <div><span class="mc-def">${def}</span>DEF</div>
-        <div><span class="mc-hp">${hp}${hp !== maxHp ? `/${maxHp}` : ''}</span>HP</div>
-      </div>`}
-      ${card.pointFaible ? '<div class="pf-tag" style="margin-bottom:10px;">⚠ Point Faible vs PeopleSpheres</div>' : ''}
-      <div class="cz-ability">${cardAbilityText(card)}</div>
+      <div class="cf-bottom">
+        <div class="cz-sub">${rarityLabel(card.rarity)} · ${DOMAIN_LABELS[card.domain] || ''}${isAction ? ' · <span class="action-tag">⚡ Action</span>' : ''}</div>
+        ${isAction ? '' : `
+        <div class="cz-stats">
+          <div><span class="mc-atk">${atk}</span>ATK</div>
+          <div><span class="mc-def">${def}</span>DEF</div>
+          <div><span class="mc-hp">${hp}${hp !== maxHp ? `/${maxHp}` : ''}</span>HP</div>
+        </div>`}
+        ${card.pointFaible ? '<div class="cz-pf">⚠ Point Faible vs PeopleSpheres</div>' : ''}
+        <div class="cz-ability">${cardAbilityText(card)}</div>
+      </div>
     </div>`;
 }
 
@@ -757,17 +757,22 @@ function handCardHtml(state, card, seatId) {
   const affordable = cost <= owner.mana && (isAction || owner.board.length < MAX_BOARD);
   const color = DOMAIN_COLORS[card.domain] || '#666';
   return `
-    <div class="hand-card ${rarityClass(card.rarity)} ${affordable ? '' : 'unaffordable'}" data-uid="${card.uid}" style="--dcolor:${color}" title="${escapeAttr(cardAbilityText(card))}">
+    <div class="hand-card card-face ${rarityClass(card.rarity)} ${affordable ? '' : 'unaffordable'}" data-uid="${card.uid}" style="--dcolor:${color}" title="${escapeAttr(cardAbilityText(card))}">
       <div class="card-art">${cardArtMarkup(card)}</div>
-      <div class="hc-cost">${cost}</div>
-      <div class="hc-name"><span class="domain-icon">${DOMAIN_ICONS[card.domain] || ''}</span>${card.name}</div>
-      <div class="hc-ability">${DOMAIN_LABELS[card.domain]} · ${rarityLabel(card.rarity)}${isAction ? ' · <span class="action-tag">⚡ Action</span>' : ''}${card.pointFaible ? ' · PF' : ''}</div>
-      ${isAction ? '' : `
-      <div class="hc-stats">
-        <span class="mc-atk">${card.currentAtk}</span>
-        <span class="mc-def">${card.currentDef}</span>
-        <span class="mc-hp">${card.currentHp}</span>
-      </div>`}
+      <div class="card-art-scrim"></div>
+      <div class="cf-top">
+        <span class="cf-name"><span class="domain-icon">${DOMAIN_ICONS[card.domain] || ''}</span>${card.name}</span>
+        <span class="cf-cost">${cost}</span>
+      </div>
+      <div class="cf-bottom">
+        <div class="cf-meta">${DOMAIN_LABELS[card.domain]} · ${rarityLabel(card.rarity)}${isAction ? ' · ⚡' : ''}${card.pointFaible ? ' · <span class="cf-pf">PF</span>' : ''}</div>
+        ${isAction ? '' : `
+        <div class="cf-stats">
+          <span class="mc-atk">${card.currentAtk}</span>
+          <span class="mc-def">${card.currentDef}</span>
+          <span class="mc-hp">${card.currentHp}</span>
+        </div>`}
+      </div>
     </div>`;
 }
 
