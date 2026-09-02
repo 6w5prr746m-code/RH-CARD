@@ -508,6 +508,7 @@ function onHeroPowerClick() {
     return;
   }
   SFX.play('synergy');
+  recordHeroPowerUse();
   renderGame();
   animateDiff(before, captureSnapshot(gameState), beforeRects);
   if (gameState.winner) showGameOver();
@@ -1085,6 +1086,9 @@ function showGameOver() {
 
   const resultKey = draw ? 'draw' : (playerWonVsAi ? 'win' : 'loss');
   const newAchievements = recordGameResult({ mode: gameState.mode, result: resultKey });
+  if (playerWonVsAi) {
+    newAchievements.push(...recordArchetypeWin(gameState.players.player.heroPowerDomain));
+  }
 
   const isCampaign = gameState.campaignStageIndex != null;
   const campaignResult = isCampaign ? recordCampaignResult(gameState.campaignStageIndex, playerWonVsAi) : null;

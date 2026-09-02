@@ -6,10 +6,11 @@ const PROGRESSION_KEY = 'rhcard_progression';
 
 function defaultProgression() {
   return {
-    stats: { gamesPlayed: 0, gamesWon: 0, gamesLost: 0, draws: 0, localGames: 0, boostersOpened: 0, currentWinStreak: 0, bestWinStreak: 0 },
+    stats: { gamesPlayed: 0, gamesWon: 0, gamesLost: 0, draws: 0, localGames: 0, boostersOpened: 0, currentWinStreak: 0, bestWinStreak: 0, heroPowersUsed: 0 },
     streak: { count: 0, lastClaimDate: null },
     unlocked: [], // achievement ids
     campaign: { unlockedIndex: 0, cleared: [] }, // cleared = stage ids first-cleared (reward-once)
+    domainsWonWith: [], // domain ids: solo-vs-AI wins where that domain was the deck's dominant archetype
   };
 }
 
@@ -74,8 +75,13 @@ const ACHIEVEMENTS = [
   { id: 'local_duel', label: 'Duel entre amis', desc: 'Terminez une partie en duel local.', boosters: 1, check: s => s.localGames >= 1 },
   { id: 'ten_boosters', label: 'Collectionneur', desc: 'Ouvrez 10 boosters.', boosters: 1, check: s => s.boostersOpened >= 10 },
   { id: 'half_collection', label: 'Mi-collection', desc: 'Débloquez la moitié des cartes.', boosters: 2, check: () => ownedUniqueCardCount() >= Math.ceil(ALL_CARDS.length / 2) },
-  { id: 'full_collection', label: 'Collection complète', desc: 'Débloquez les 97 cartes.', boosters: 3, check: () => ownedUniqueCardCount() >= ALL_CARDS.length },
+  { id: 'full_collection', label: 'Collection complète', desc: 'Débloquez les 103 cartes.', boosters: 3, check: () => ownedUniqueCardCount() >= ALL_CARDS.length },
   { id: 'week_streak', label: 'Habitué·e', desc: 'Connectez-vous 7 jours d\'affilée.', boosters: 2, check: (s, p) => p.streak.count >= 7 },
+  { id: 'campaign_first_stage', label: 'Premier contrat', desc: 'Remportez la première étape de la campagne.', boosters: 1, check: (s, p) => p.campaign.cleared.includes('cabinet-local') },
+  { id: 'campaign_boss', label: 'Vainqueur du Consortium', desc: "Battez l'étape finale de la campagne.", boosters: 2, check: (s, p) => p.campaign.cleared.includes('consortium-mondial') },
+  { id: 'campaign_complete', label: 'Repreneur du marché', desc: 'Terminez les 8 étapes de la campagne.', boosters: 3, check: (s, p) => p.campaign.cleared.length >= CAMPAIGN_STAGES.length },
+  { id: 'domain_mastery', label: 'Maîtrise complète', desc: 'Remportez une partie avec chacun des 6 domaines comme archétype dominant.', boosters: 3, check: (s, p) => p.domainsWonWith.length >= SYNERGY_DOMAINS.length },
+  { id: 'hero_power_veteran', label: 'Pouvoir en main', desc: 'Utilisez un pouvoir héroïque 10 fois.', boosters: 1, check: s => s.heroPowersUsed >= 10 },
 ];
 
 function ownedUniqueCardCount() {
@@ -131,6 +137,25 @@ function recordGameResult({ mode, result }) {
 function recordBoosterOpened() {
   const p = loadProgression();
   p.stats.boostersOpened++;
+  saveProgression();
+  return checkAchievements();
+}
+
+// Called on a solo-vs-AI win with the winning deck's dominant domain (see
+// computeDominantDomain in engine.js — the same domain that decided the
+// player's hero power). Feeds the domain_mastery achievement.
+function recordArchetypeWin(domain) {
+  const p = loadProgression();
+  if (domain && !p.domainsWonWith.includes(domain)) {
+    p.domainsWonWith.push(domain);
+    saveProgression();
+  }
+  return checkAchievements();
+}
+
+function recordHeroPowerUse() {
+  const p = loadProgression();
+  p.stats.heroPowersUsed++;
   saveProgression();
   return checkAchievements();
 }
