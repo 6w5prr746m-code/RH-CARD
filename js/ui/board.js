@@ -1080,6 +1080,78 @@ function campaignResultHtml(result) {
   return '';
 }
 
+// Plain canvas 2D line chart — no library, no assets, matches the project's
+// zero-dependency rule. hpHistory is [{turn, player, ai}], one point per
+// turn start plus a final point captured the instant the game ended (see
+// pushHpSnapshot in engine.js), so the last segment can be a partial turn.
+function renderHpChart(canvas, hpHistory) {
+  if (!canvas || !hpHistory || hpHistory.length < 2) { if (canvas) canvas.closest('.go-hp-chart-wrap').style.display = 'none'; return; }
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const pad = { l: 28, r: 10, t: 10, b: 20 };
+  const plotW = W - pad.l - pad.r;
+  const plotH = H - pad.t - pad.b;
+  const maxHp = Math.max(HERO_MAX_HP, ...hpHistory.map(p => Math.max(p.player, p.ai)));
+  const style = getComputedStyle(document.body);
+  const accent = style.getPropertyValue('--accent').trim() || '#4fd1c5';
+  const accent2 = style.getPropertyValue('--accent-2').trim() || '#ffb454';
+  const gridColor = style.getPropertyValue('--border').trim() || '#333';
+  const textColor = style.getPropertyValue('--text-dim').trim() || '#888';
+
+  ctx.clearRect(0, 0, W, H);
+
+  const x = (i) => pad.l + (i / (hpHistory.length - 1)) * plotW;
+  const y = (hp) => pad.t + plotH - (clamp(hp, 0, maxHp) / maxHp) * plotH;
+
+  // Gridlines at 0 / half / max HP, with their value labelled.
+  ctx.strokeStyle = gridColor;
+  ctx.fillStyle = textColor;
+  ctx.font = '10px -apple-system, "Segoe UI", Roboto, Arial, sans-serif';
+  ctx.textAlign = 'right';
+  ctx.textBaseline = 'middle';
+  ctx.lineWidth = 1;
+  for (const frac of [0, 0.5, 1]) {
+    const gy = pad.t + plotH * (1 - frac);
+    ctx.beginPath();
+    ctx.moveTo(pad.l, gy);
+    ctx.lineTo(W - pad.r, gy);
+    ctx.globalAlpha = 0.35;
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+    ctx.fillText(String(Math.round(maxHp * frac)), pad.l - 4, gy);
+  }
+
+  function drawLine(key, color) {
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    hpHistory.forEach((p, i) => {
+      const px = x(i), py = y(p[key]);
+      if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+    });
+    ctx.stroke();
+    // Endpoint dot so the final HP value reads clearly even on a short game.
+    const last = hpHistory[hpHistory.length - 1];
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.arc(x(hpHistory.length - 1), y(last[key]), 3, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  drawLine('ai', accent2);
+  drawLine('player', accent);
+
+  // A handful of turn-number ticks along the x-axis (not every point, or a
+  // long game turns this into an unreadable smear of overlapping labels).
+  ctx.fillStyle = textColor;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+  const tickCount = Math.min(6, hpHistory.length);
+  for (let k = 0; k < tickCount; k++) {
+    const i = Math.round((k / (tickCount - 1)) * (hpHistory.length - 1));
+    ctx.fillText(String(hpHistory[i].turn), x(i), H - pad.b + 3);
+  }
+}
+
 function showGameOver() {
   clearSavedGameState();
   const root = document.getElementById('modal-root');
@@ -1136,6 +1208,13 @@ function showGameOver() {
           ${shareChips.map(c => `<div class="go-chip"><div class="go-chip-value">${c.value}</div><div class="go-chip-label">${c.label}</div></div>`).join('')}
         </div>
         ${newAchievements.length ? `<div class="go-achievement">🏆 ${newAchievements[0].label}${newAchievements.length > 1 ? ` (+${newAchievements.length - 1} autre${newAchievements.length > 2 ? 's' : ''})` : ''}</div>` : ''}
+        <div class="go-hp-chart-wrap">
+          <div class="go-hp-chart-legend">
+            <span><i style="background:var(--accent)"></i>${seatLabel('player')}</span>
+            <span><i style="background:var(--accent-2)"></i>${seatLabel('ai')}</span>
+          </div>
+          <canvas id="go-hp-chart" width="520" height="150"></canvas>
+        </div>
         <div style="display:flex; gap:10px; margin:14px 0;">
           ${statsSummaryHtml('player')}
           ${statsSummaryHtml('ai')}
@@ -1148,6 +1227,7 @@ function showGameOver() {
         </div>
       </div>
     </div>`;
+  renderHpChart(document.getElementById('go-hp-chart'), gameState.hpHistory);
   document.getElementById('gameover-rematch').addEventListener('click', () => {
     if (isCampaign && lastPlayerDeckList) startCampaignGame(lastPlayerDeckList, gameState.campaignStageIndex);
     else if (local && lastLocalDecks) startLocalGame(lastLocalDecks[0], lastLocalDecks[1]);

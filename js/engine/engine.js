@@ -127,6 +127,7 @@ function createGameState(playerDeckList, aiDeckList) {
     pendingJob: null,
     pendingChoice: null,
     pendingReveal: null,
+    hpHistory: [], // [{turn, player, ai}] — one point per turn start, plus a final one at game end; feeds the end-of-game recap chart
   };
 
   // Both players draw every turn from equal-size decks (see startTurn), but
@@ -204,6 +205,14 @@ function startTurn(state, playerId) {
   recordSynergyPeak(state);
   checkWinCondition(state);
   log(state, `--- Tour ${state.turnNumber} : ${playerId === 'player' ? 'vous' : "l'IA"} ---`);
+  pushHpSnapshot(state);
+}
+
+function pushHpSnapshot(state) {
+  // Defensive init: a game resumed from an older autosave (before this field
+  // existed) would otherwise crash the very next turn.
+  if (!state.hpHistory) state.hpHistory = [];
+  state.hpHistory.push({ turn: state.turnNumber, player: state.players.player.heroHp, ai: state.players.ai.heroHp });
 }
 
 function endTurn(state, playerId) {
@@ -371,7 +380,10 @@ function checkWinCondition(state) {
   if (p1dead && p2dead) state.winner = 'draw';
   else if (p2dead) state.winner = 'player';
   else if (p1dead) state.winner = 'ai';
-  if (state.winner) log(state, state.winner === 'draw' ? 'Égalité !' : `${state.winner === 'player' ? 'Vous' : "L'IA"} remporte la partie !`);
+  if (state.winner) {
+    log(state, state.winner === 'draw' ? 'Égalité !' : `${state.winner === 'player' ? 'Vous' : "L'IA"} remporte la partie !`);
+    pushHpSnapshot(state);
+  }
 }
 
 // ---------------------------------------------------------------- stats overlay
