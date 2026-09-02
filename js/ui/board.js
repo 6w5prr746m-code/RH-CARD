@@ -82,6 +82,7 @@ function showCardZoom(card) {
     <div class="modal-overlay" id="zoom-overlay">
       <div class="card-zoom ${rarityClass(card.rarity)}" style="--dcolor:${color}">
         <button class="card-zoom-close" aria-label="Fermer">✕</button>
+        <div class="card-art">${cardArtMarkup(card)}</div>
         <div class="cz-header">
           <span class="domain-icon" style="font-size:24px;">${DOMAIN_ICONS[card.domain] || ''}</span>
           <div>
@@ -637,6 +638,8 @@ function miniCardHtml(state, ownerId, card, opts) {
   if (opts.targetable) classes.push('targetable');
   return `
     <div class="${classes.join(' ')}" data-uid="${card.uid}" style="--dcolor:${color}" title="${escapeAttr(cardAbilityText(card))}">
+      <div class="card-art">${cardArtMarkup(card)}</div>
+      <div class="card-art-scrim"></div>
       ${card.pointFaible ? '<div class="pf-flag">PF</div>' : ''}
       <div class="mc-name"><span class="domain-icon">${DOMAIN_ICONS[card.domain] || ''}</span>${card.name}</div>
       <div class="mc-kw">${kwLabel}</div>
@@ -664,6 +667,7 @@ function handCardHtml(state, card, seatId) {
   const color = DOMAIN_COLORS[card.domain] || '#666';
   return `
     <div class="hand-card ${rarityClass(card.rarity)} ${affordable ? '' : 'unaffordable'}" data-uid="${card.uid}" style="--dcolor:${color}" title="${escapeAttr(cardAbilityText(card))}">
+      <div class="card-art">${cardArtMarkup(card)}</div>
       <div class="hc-cost">${cost}</div>
       <div class="hc-name"><span class="domain-icon">${DOMAIN_ICONS[card.domain] || ''}</span>${card.name}</div>
       <div class="hc-ability">${DOMAIN_LABELS[card.domain]} · ${rarityLabel(card.rarity)}${isAction ? ' · <span class="action-tag">⚡ Action</span>' : ''}${card.pointFaible ? ' · PF' : ''}</div>
@@ -734,6 +738,8 @@ function tinyCardHtml(card) {
   const color = DOMAIN_COLORS[card.domain] || '#666';
   const isAction = card.cardType === 'ACTION';
   return `<div class="mini-card ${rarityClass(card.rarity)}" data-choice-uid="${card.uid}" style="--dcolor:${color}" title="${escapeAttr(cardAbilityText(card))}">
+    <div class="card-art">${cardArtMarkup(card)}</div>
+    <div class="card-art-scrim"></div>
     <div class="mc-name"><span class="domain-icon">${DOMAIN_ICONS[card.domain] || ''}</span>${card.name}</div>
     <div class="mc-kw">${DOMAIN_LABELS[card.domain] || ''}${isAction ? ' · ⚡' : ''}</div>
     ${isAction ? '' : `<div class="mc-stats"><span class="mc-atk">${card.baseAtk ?? card.atk}</span><span class="mc-def">${card.baseDef ?? card.def}</span><span class="mc-hp">${card.baseHp ?? card.hp}</span></div>`}

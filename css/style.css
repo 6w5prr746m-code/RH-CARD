@@ -394,6 +394,25 @@ select {
 .hand-card:hover::after { opacity: 1; }
 .hand-card.unaffordable:hover::after { opacity: 0; }
 
+/* ---------------------------------------------------------- Card art */
+
+.card-art { line-height: 0; overflow: hidden; pointer-events: none; }
+.card-art svg { display: block; width: 100%; height: 100%; }
+
+.card-tile .card-art { height: 70px; margin: -8px -8px 6px -8px; border-radius: 7px 7px 0 0; }
+.hand-card .card-art { height: 56px; margin: -8px -8px 6px -8px; border-radius: 8px 8px 0 0; }
+.card-zoom .card-art { height: 170px; margin: -22px -22px 16px -22px; border-radius: 12px 12px 0 0; }
+
+.mini-card .card-art,
+.mini-card .card-art-scrim {
+  position: absolute; inset: 0; z-index: 0; border-radius: 6px;
+}
+.mini-card .card-art { opacity: 0.55; }
+.mini-card .card-art-scrim {
+  background: linear-gradient(180deg, rgba(10,12,20,0.2), rgba(10,12,20,0.86) 78%);
+}
+.mini-card .mc-name, .mini-card .mc-kw, .mini-card .mc-stats { position: relative; z-index: 1; }
+
 .hand-card.card-enter, .mini-card.card-enter {
   animation: cardEnter 0.4s cubic-bezier(0.2, 0.8, 0.3, 1.1);
 }
@@ -598,6 +617,7 @@ select {
 
   .mini-card { width: 88px; min-height: 108px; }
   .hand-card { width: 96px; min-height: 148px; }
+  .hand-card .card-art { height: 46px; }
   .hand-row { min-height: 160px; padding: 10px; }
   .board-row { min-height: 120px; }
 
@@ -619,6 +639,7 @@ select {
 
   .mini-card { width: 74px; min-height: 96px; font-size: 10px; }
   .hand-card { width: 82px; min-height: 130px; font-size: 10px; }
+  .hand-card .card-art { height: 38px; }
   .hand-row { gap: 5px; padding: 8px; }
   .board-row { gap: 5px; padding: 6px; }
 
@@ -626,6 +647,7 @@ select {
   #end-turn-btn { padding: 10px 14px; font-size: 13px; }
 
   .card-tile { padding: 6px; font-size: 11px; }
+  .card-tile .card-art { height: 54px; }
   .pool-grid { grid-template-columns: repeat(auto-fill, minmax(108px, 1fr)); gap: 6px; padding: 10px; }
 
   .card-zoom { width: 88vw; }

@@ -170,6 +170,7 @@ function cardTileHtml(card) {
   const isAction = card.cardType === 'ACTION';
   return `
     <div class="card-tile ${rarityClass(card.rarity)} ${maxed ? 'maxed' : ''}" data-id="${card.id}" style="--dcolor:${color}">
+      <div class="card-art">${cardArtMarkup(card)}</div>
       <div class="cost-badge">${card.cost}</div>
       ${count > 0 ? `<div class="count-badge">×${count}</div>` : ''}
       <div class="name"><span class="domain-icon">${DOMAIN_ICONS[card.domain] || ''}</span>${card.name}</div>
