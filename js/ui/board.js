@@ -633,7 +633,7 @@ function renderHeroPortrait(elId, seatId, playerState) {
   const domain = heroPortraitDomain(seatId, playerState);
   const el = document.getElementById(elId);
   el.style.setProperty('--dcolor', DOMAIN_COLORS[domain] || '#4fd1c5');
-  el.textContent = DOMAIN_ICONS[domain] || '🏢';
+  el.textContent = DOMAIN_FACE_ICONS[domain] || '🏢';
   el.parentElement.title = domain === DOMAIN.TRANSVERSAL
     ? (seatId === 'player' ? 'Votre héros — PeopleSpheres' : 'Héros adverse — PeopleSpheres')
     : `${seatId === 'player' ? 'Votre héros' : 'Héros adverse'} — ${DOMAIN_LABELS[domain]}`;

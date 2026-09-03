@@ -68,6 +68,27 @@ const DOMAIN_ICONS = {
   [DOMAIN.TRANSVERSAL]: '🌐',
 };
 
+// Face/portrait icons for the hero avatars (board.js renderHeroPortrait) —
+// distinct from DOMAIN_ICONS above, which badges cards/synergy UI with
+// flavor objects (💰🛡️📊...) rather than faces. Every domain gets a
+// consistent "who's leading this army" bust, on theme with the fantasy
+// creature guilds introduced for the 6 new domains.
+const DOMAIN_FACE_ICONS = {
+  [DOMAIN.PAIE_GA]: '🧝',
+  [DOMAIN.GTA]: '🧌',
+  [DOMAIN.RECRUTEMENT]: '🥷',
+  [DOMAIN.FORMATION]: '🧙',
+  [DOMAIN.TALENT_PERF]: '🐉',
+  [DOMAIN.PILOTAGE_BI]: '🦉',
+  [DOMAIN.PREVENTION]: '🗿',
+  [DOMAIN.CONFORMITE]: '🧞',
+  [DOMAIN.TRESORERIE]: '👺',
+  [DOMAIN.ARCHIVES]: '👻',
+  [DOMAIN.MOBILITE]: '🧚',
+  [DOMAIN.RESEAU]: '👾',
+  [DOMAIN.TRANSVERSAL]: '🤖',
+};
+
 // One hero power per domain, auto-assigned to each player from their deck's
 // dominant domain (see computeDominantDomain in engine.js) — no separate
 // "pick a hero" step, it just follows whatever the deck is already built
