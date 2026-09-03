@@ -620,6 +620,25 @@ function seatLabel(seatId) {
   return seatId === 'player' ? 'Vous' : "L'IA";
 }
 
+// The player is always PeopleSpheres (solo/campaign): a fixed brand portrait,
+// distinct from the avatar domain used for hero power/signature. The AI (or,
+// in local2p, the other human) has no fixed brand, so its portrait reflects
+// whichever domain its hero power actually draws from.
+function heroPortraitDomain(seatId, playerState) {
+  if (seatId === 'player' && gameState.mode !== 'local2p') return DOMAIN.TRANSVERSAL;
+  return playerState.heroPowerDomain;
+}
+
+function renderHeroPortrait(elId, seatId, playerState) {
+  const domain = heroPortraitDomain(seatId, playerState);
+  const el = document.getElementById(elId);
+  el.style.setProperty('--dcolor', DOMAIN_COLORS[domain] || '#4fd1c5');
+  el.textContent = DOMAIN_ICONS[domain] || '🏢';
+  el.parentElement.title = domain === DOMAIN.TRANSVERSAL
+    ? (seatId === 'player' ? 'Votre héros — PeopleSpheres' : 'Héros adverse — PeopleSpheres')
+    : `${seatId === 'player' ? 'Votre héros' : 'Héros adverse'} — ${DOMAIN_LABELS[domain]}`;
+}
+
 async function handleEndTurn() {
   if (!canPlayerAct()) return;
   inputLocked = true;
@@ -759,6 +778,8 @@ function renderGame() {
   document.getElementById('ai-hand-count').textContent = top.hand.length;
   document.getElementById('ai-hero-name').textContent = seatLabel(topSeat);
   document.getElementById('player-hero-name').textContent = gameState.mode === 'local2p' ? seatLabel(bottomSeat) : 'Vous (PeopleSpheres)';
+  renderHeroPortrait('ai-hero-portrait', topSeat, top);
+  renderHeroPortrait('player-hero-portrait', bottomSeat, bottom);
 
   const provocateurs = selectedAttackerUid ? getProvocationCards(gameState, topSeat) : [];
   const canTargetHero = selectedAttackerUid && provocateurs.length === 0;
