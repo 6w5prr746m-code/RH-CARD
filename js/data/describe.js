@@ -37,7 +37,7 @@ function describeEffect(effect, domainSelf) {
     case 'costReduction':
       return `Réduit de ${effect.amount} le coût de ${effect.count} carte(s) ${effect.domain === 'any' ? '' : DOMAIN_LABELS[effect.domain === 'self' ? domainSelf : effect.domain] + ' '}suivante(s) ce tour.`;
     case 'condDrawIfDomainCount':
-      return `Piochez ${effect.amount} si vous contrôlez ${effect.min}+ cartes ${DOMAIN_LABELS[effect.domain]}.`;
+      return `Piochez ${effect.amount} si vous contrôlez ${effect.min}+ cartes ${DOMAIN_LABELS[effect.domain === 'self' ? domainSelf : effect.domain]}.`;
     case 'condDrawIfHandSize':
       return `Piochez ${effect.amount} si votre main a ${effect.maxHandSize} cartes ou moins.`;
     case 'discard':
