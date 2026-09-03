@@ -94,6 +94,12 @@ function* maybeUseHeroPowerStep(state) {
     [DOMAIN.FORMATION]: () => p.board.length > 0,
     [DOMAIN.TALENT_PERF]: () => p.board.length > 0,
     [DOMAIN.PILOTAGE_BI]: () => p.deck.length > 0,
+    [DOMAIN.PREVENTION]: () => p.heroHp < p.heroMaxHp,
+    [DOMAIN.CONFORMITE]: () => true,
+    [DOMAIN.TRESORERIE]: () => p.board.length > 0,
+    [DOMAIN.ARCHIVES]: () => p.deck.length > 0,
+    [DOMAIN.MOBILITE]: () => p.board.length > 0,
+    [DOMAIN.RESEAU]: () => true,
   }[p.heroPowerDomain];
   if (!worthwhile || !worthwhile()) return;
 
@@ -120,6 +126,12 @@ function* maybeUseSignatureAbilityStep(state) {
     [DOMAIN.FORMATION]: () => countDomain(DOMAIN.FORMATION) >= 2,
     [DOMAIN.TALENT_PERF]: () => countDomain(DOMAIN.TALENT_PERF) >= 2 && state.turnNumber >= 4,
     [DOMAIN.PILOTAGE_BI]: () => p.deck.length >= 5,
+    [DOMAIN.PREVENTION]: () => p.heroHp <= p.heroMaxHp * 0.7,
+    [DOMAIN.CONFORMITE]: () => p.hand.length <= 5,
+    [DOMAIN.TRESORERIE]: () => countDomain(DOMAIN.TRESORERIE) >= 2,
+    [DOMAIN.ARCHIVES]: () => p.deck.length >= 5,
+    [DOMAIN.MOBILITE]: () => countDomain(DOMAIN.MOBILITE) >= 2 && state.turnNumber >= 4,
+    [DOMAIN.RESEAU]: () => p.deck.length >= 4 && p.hand.length <= 5,
   }[p.heroPowerDomain];
   if (!worthwhile || !worthwhile()) return;
 

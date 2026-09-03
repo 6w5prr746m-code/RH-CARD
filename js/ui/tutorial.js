@@ -57,7 +57,7 @@ function tutorialPages() {
         <p>Un deck contient entre <b>25 et 30 cartes</b>, choisies parmi les cartes que vous possédez. Une carte 1★/2★ peut être incluse en <b>2 exemplaires</b> maximum, une carte 3★ ou légendaire en <b>1 seul exemplaire</b>.</p>
         <p>Vous débutez avec une collection de base et des <b>boosters</b> 🎁 — ouvrez-les depuis l'écran de construction pour débloquer de nouvelles cartes aléatoires.</p>
         <p>Sauvegardez vos decks favoris (💾) pour les recharger (📂) plus tard, ou générez un deck aléatoire parmi vos cartes possédées en un clic.</p>
-        <p>Astuce : viser 2-3 domaines dominants dans un même deck permet d'atteindre les paliers de synergie plus vite qu'en dispersant les cartes sur les 6 domaines.</p>`,
+        <p>Astuce : viser 2-3 domaines dominants dans un même deck permet d'atteindre les paliers de synergie plus vite qu'en dispersant les cartes sur les ${SYNERGY_DOMAINS.length} domaines.</p>`,
     },
     {
       title: 'En partie',

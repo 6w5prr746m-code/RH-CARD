@@ -12,12 +12,12 @@
 ## Sommaire
 
 1. [Modèle de carte](#1-modèle-de-carte)
-2. [Les 6 domaines et leur synergie](#2-les-6-domaines-et-leur-synergie)
+2. [Les 12 domaines et leur synergie](#2-les-12-domaines-et-leur-synergie)
 3. [Coût en mana](#3-coût-en-mana)
 4. [Mécanique "Point Faible"](#4-mécanique-point-faible)
 5. [Deck-building](#5-deck-building)
 6. [Règles générales](#6-règles-générales)
-7. [Pool de cartes (90 + PeopleSpheres)](#7-pool-de-cartes-90--peoplespheres)
+7. [Pool de cartes (204 + PeopleSpheres)](#7-pool-de-cartes-204--peoplespheres)
 8. [Tableau récapitulatif complet](#8-tableau-récapitulatif-complet)
 
 ---
@@ -29,7 +29,7 @@ Chaque carte possède les attributs suivants :
 | Attribut | Description |
 |---|---|
 | **Nom** | Nom de l'éditeur SIRH représenté |
-| **Domaine** | 1 des 6 domaines (ou *Transversal* pour PeopleSpheres) |
+| **Domaine** | 1 des 12 domaines (ou *Transversal* pour PeopleSpheres) |
 | **Niveau / Rareté** | ★ (Commune), ★★ (Rare), ★★★ (Épique), ∞ (Légendaire — PeopleSpheres uniquement) |
 | **Coût en mana** | Coût pour jouer la carte (voir §3) |
 | **ATK** | Dégâts infligés lors d'une attaque |
@@ -62,11 +62,13 @@ Chaque carte n'attaque qu'une fois par tour, sauf effet contraire, et souffre du
 
 ---
 
-## 2. Les 6 domaines et leur synergie
+## 2. Les 12 domaines et leur synergie
 
 Les bonus de synergie s'activent en fonction du nombre de cartes **du même domaine simultanément en jeu** (sur le plateau, pas en main ni dans le deck). Les paliers sont **cumulables** : atteindre le palier 4 signifie que les effets des paliers 2 ET 4 s'appliquent en même temps. Les seuils sont réévalués en continu (dès qu'une carte du domaine entre ou sort du jeu).
 
-PeopleSpheres est *Transversale* : elle compte pour **chacun** des 6 domaines pour le calcul des paliers de synergie (elle est comptée simultanément dans toutes les synergies actives).
+PeopleSpheres est *Transversale* : elle compte pour **chacun** des 12 domaines pour le calcul des paliers de synergie (elle est comptée simultanément dans toutes les synergies actives).
+
+Les 6 premiers domaines ci-dessous forment le cœur historique du jeu (le "SIRH classique"). Les 6 domaines suivants — la **Guilde des Éditeurs Spécialisés** — regroupent les solutions périphériques de l'écosystème RH (sécurité, conformité, notes de frais, dématérialisation, mobilité internationale et digital workplace), chacune associée à une famille de créatures fantastiques distincte.
 
 ### 🟦 PAIE / GA — Stabilité *(soin, réduction de dégâts subis)*
 
@@ -115,6 +117,58 @@ PeopleSpheres est *Transversale* : elle compte pour **chacun** des 6 domaines po
 | 2 cartes | Au début de votre tour, regardez la carte du dessus de votre pioche (information uniquement, pas de défausse). |
 | 4 cartes | + Une fois par tour, quand un effet vous fait piocher une carte, piochez-en 2 et gardez celle de votre choix (l'autre est défaussée). |
 | 6 cartes | + Une fois par tour, vous pouvez échanger 1 carte de votre main contre une nouvelle carte piochée. |
+
+### 🗿 PRÉVENTION & SÉCURITÉ — Rempart *(réduction de dégâts, créatures : Golems de garde)*
+
+| Palier | Effet |
+|---|---|
+| 2 cartes | Les dégâts subis par votre héros sont réduits de **1** (minimum 1 dégât appliqué). |
+| 4 cartes | La réduction passe à **2**. |
+| 6 cartes | La réduction passe à **3**. |
+
+*Cumulable avec la réduction de PAIE/GA (palier 4) si les deux synergies sont actives simultanément.*
+
+### 🧞 CONFORMITÉ & RÉMUNÉRATION — Contrôle *(affaiblit l'ATK adverse, créatures : Djinns du droit)*
+
+| Palier | Effet |
+|---|---|
+| 2 cartes | Toutes les cartes adverses en jeu subissent **-1 ATK** (minimum 0). |
+| 4 cartes | Le malus passe à **-2 ATK**. |
+| 6 cartes | Le malus passe à **-3 ATK**. |
+
+### 👺 NOTES DE FRAIS & TRÉSORERIE — Liquidités *(mana bonus, créatures : Gobelins comptables)*
+
+| Palier | Effet |
+|---|---|
+| 2 cartes | Au début de votre tour, gagnez **+1 mana** temporaire (non cumulé au mana max). |
+| 4 cartes | Le bonus passe à **+2 mana**. |
+| 6 cartes | Le bonus passe à **+3 mana**. |
+
+### 👻 DÉMATÉRIALISATION & ARCHIVES — Mémoire *(regarder la pioche, récupérer la défausse, créatures : Spectres archivistes)*
+
+| Palier | Effet |
+|---|---|
+| 2 cartes | Au début de votre tour, regardez la carte du dessus de votre pioche (information uniquement). |
+| 4 cartes | (inchangé — le palier 2 reste actif) |
+| 6 cartes | + Une fois par tour, récupérez la dernière carte de votre défausse dans votre main. |
+
+### 🧚 MOBILITÉ & INTÉGRATION — Élan *(bonus à la pose, Charge, créatures : Fées voyageuses)*
+
+| Palier | Effet |
+|---|---|
+| 2 cartes | Chaque carte MOBILITÉ que vous jouez gagne immédiatement **+1 ATK / +1 HP**. |
+| 4 cartes | + La carte MOBILITÉ avec le plus de HP en jeu au moment où vous en jouez une nouvelle lui donne **Charge** dès sa mise en jeu. |
+| 6 cartes | + **Toutes** vos cartes MOBILITÉ gagnent **Charge** dès leur mise en jeu. |
+
+### 🕷️ DIGITAL WORKPLACE & IA — Réseau *(buff ATK selon la diversité de domaines, créatures : Araignées du réseau)*
+
+| Palier | Effet |
+|---|---|
+| 2 cartes | Vos cartes DIGITAL WORKPLACE & IA gagnent **+1 ATK** par domaine différent représenté sur votre plateau (plafond **2**). |
+| 4 cartes | Le plafond passe à **4**. |
+| 6 cartes | Le plafond passe à **6**. |
+
+*Ce domaine est le seul dont la puissance dépend de la diversité du reste du plateau plutôt que du nombre de ses propres cartes : un deck multi-domaines le renforce directement.*
 
 ---
 
@@ -175,9 +229,9 @@ Cette règle ne s'applique **qu'à l'affrontement direct** entre les deux cartes
 
 ---
 
-## 7. Pool de cartes (90 + PeopleSpheres)
+## 7. Pool de cartes (204 + PeopleSpheres)
 
-Pour chaque domaine, 15 cartes sont réparties ainsi : 6 ★ (3 à coût 1, 3 à coût 2), 6 ★★ (2 à coût 3, 2 à coût 4, 2 à coût 5), 3 ★★★ (1 à coût 6, 1 à coût 7, 1 à coût 8). Chaque domaine applique un ratio ATK/DEF/HP cohérent avec son thème :
+Pour chaque domaine, 15 cartes-créature sont réparties ainsi : 6 ★ (3 à coût 1, 3 à coût 2), 6 ★★ (2 à coût 3, 2 à coût 4, 2 à coût 5), 3 ★★★ (1 à coût 6, 1 à coût 7, 1 à coût 8), plus 2 cartes Action (effets ponctuels sans stats, noms fictifs plutôt que noms d'éditeurs réels) — soit 17 cartes par domaine, 12 domaines, 204 cartes + PeopleSpheres. Chaque domaine applique un ratio ATK/DEF/HP cohérent avec son thème :
 
 | Domaine | Ratio ATK / DEF / HP |
 |---|---|
@@ -187,6 +241,12 @@ Pour chaque domaine, 15 cartes sont réparties ainsi : 6 ★ (3 à coût 1, 3 à
 | FORMATION | 25 / 25 / 50 (équilibré, HP dominant — les stats grossissent avec le temps) |
 | TALENT/PERFORMANCE | 50 / 15 / 35 (ATK dominant) |
 | PILOTAGE/BI | 15 / 25 / 60 (HP dominant, cartes "support information") |
+| PRÉVENTION & SÉCURITÉ | 20 / 45 / 45 (DEF/HP, réduction de dégâts au héros) |
+| CONFORMITÉ & RÉMUNÉRATION | 25 / 30 / 45 (équilibré DEF/HP, affaiblit l'ATK adverse) |
+| NOTES DE FRAIS & TRÉSORERIE | 25 / 25 / 45 (équilibré, génère du mana) |
+| DÉMATÉRIALISATION & ARCHIVES | 20 / 25 / 55 (HP dominant, cartes "manipulation de pioche/défausse") |
+| MOBILITÉ & INTÉGRATION | 45 / 20 / 40 (ATK dominant, Charge fréquente — cartes tempo agressives) |
+| DIGITAL WORKPLACE & IA | 25 / 25 / 45 (équilibré, ATK scale avec la diversité de domaines en jeu) |
 
 ### 7.1 PAIE / GA — Stabilité
 
@@ -308,19 +368,139 @@ Pour chaque domaine, 15 cartes sont réparties ainsi : 6 ★ (3 à coût 1, 3 à
 | IBM Cognos | ★ | 1 | 1 | 1 | 4 | — (carte vanille) | PF |
 | Oracle Hyperion | ★ | 1 | 1 | 1 | 4 | — (carte vanille) | |
 
-### 7.7 Légendaire — PeopleSpheres
+### 7.7 PRÉVENTION & SÉCURITÉ — Rempart
+
+| Nom | Niveau | Coût | ATK | DEF | HP | Capacité | PF |
+|---|---|---|---|---|---|---|---|
+| Previsoft | ★★★ | 8 | 3 | 6 | 8 | Aura : dégâts subis par votre héros réduits de 2. |  |
+| Riskoo | ★★★ | 7 | 2 | 6 | 7 | Provocation. Effet d'Entrée : +2 DEF à toutes vos cartes Prévention & Sécurité en jeu (permanent). |  |
+| ALEA Prevention | ★★★ | 6 | 2 | 5 | 7 | Aura : dégâts reçus par cette carte au combat réduits de 1. | PF |
+| HSE | ★★ | 5 | 2 | 4 | 6 | Effet d'Entrée : héros récupère 2 PV. |  |
+| Agile | ★★ | 5 | 3 | 3 | 5 | Effet d'Entrée : +2 DEF à une carte alliée du même domaine. |  |
+| PROG/NOV | ★★ | 4 | 2 | 4 | 5 | Aura : dégâts subis par votre héros réduits de 1. |  |
+| DOTNET | ★★ | 4 | 2 | 3 | 5 | Provocation. |  |
+| GHS | ★★ | 3 | 1 | 4 | 5 | Effet d'Entrée : héros récupère 1 PV. |  |
+| Cogilog | ★★ | 3 | 2 | 3 | 4 | Effet Final : héros récupère 2 PV. |  |
+| Alfatea | ★ | 2 | 2 | 2 | 4 | Charge. |  |
+| TDC Sécurité | ★ | 2 | 1 | 3 | 3 | — (carte vanille) |  |
+| Preventeo | ★ | 2 | 1 | 2 | 4 | Effet d'Entrée : Regardez la carte du dessus de votre pioche. |  |
+| WinLassie | ★ | 1 | 1 | 2 | 3 | — (carte vanille) |  |
+| Acciline+ | ★ | 1 | 1 | 1 | 4 | — (carte vanille) | PF |
+| ASYS | ★ | 1 | 0 | 2 | 3 | — (carte vanille) | PF |
+
+### 7.8 CONFORMITÉ & RÉMUNÉRATION — Contrôle
+
+| Nom | Niveau | Coût | ATK | DEF | HP | Capacité | PF |
+|---|---|---|---|---|---|---|---|
+| Altaÿs SIRH | ★★★ | 8 | 4 | 4 | 8 | Effet d'Entrée : Piochez 1 carte. Effet d'Entrée : Défaussez 1 carte(s) au hasard. |  |
+| TriNet Zenefits | ★★★ | 7 | 4 | 4 | 7 | Effet d'Entrée : +2 DEF à toutes vos cartes Conformité & Rémunération en jeu (permanent). |  |
+| Delegatio | ★★★ | 6 | 3 | 4 | 7 | Aura : +1 DEF au début de votre tour. | PF |
+| Alcuin | ★★ | 5 | 3 | 3 | 6 | Effet d'Entrée : Piochez 1 carte. |  |
+| Smart BDESE | ★★ | 5 | 3 | 3 | 5 | Effet d'Entrée : Regardez la main adverse. |  |
+| ZenDSN | ★★ | 4 | 3 | 2 | 6 | Effet d'Entrée : Regardez le dessus de la pioche ; vous pouvez la défausser pour piocher la suivante. |  |
+| Allshare | ★★ | 4 | 2 | 3 | 5 | Effet d'Entrée : +1 DEF / +1 HP à une carte alliée ciblée. |  |
+| Cotranet | ★★ | 3 | 2 | 2 | 5 | Effet d'Entrée : Défaussez 1 carte(s) au hasard. Effet d'Entrée : Piochez 1 carte. |  |
+| BDES Online | ★★ | 3 | 2 | 3 | 4 | Effet d'Entrée : Regardez la carte du dessus de votre pioche. |  |
+| WTW | ★ | 2 | 2 | 2 | 4 | Charge. |  |
+| Xactly | ★ | 2 | 2 | 1 | 4 | Effet d'Entrée : +1 ATK à une carte alliée ciblée. |  |
+| HRSoft | ★ | 2 | 1 | 2 | 4 | — (carte vanille) |  |
+| Varicent | ★ | 1 | 1 | 2 | 3 | — (carte vanille) |  |
+| Primeum | ★ | 1 | 2 | 1 | 3 | — (carte vanille) | PF |
+| J.P. Morgan Workplace Solutions | ★ | 1 | 1 | 1 | 4 | — (carte vanille) | PF |
+
+### 7.9 NOTES DE FRAIS & TRÉSORERIE — Liquidités
+
+| Nom | Niveau | Coût | ATK | DEF | HP | Capacité | PF |
+|---|---|---|---|---|---|---|---|
+| Lucca | ★★★ | 8 | 3 | 4 | 9 | Effet d'Entrée : Réduit de 2 le coût de 2 carte(s) Notes de Frais & Trésorerie suivante(s) ce tour. |  |
+| N2F | ★★★ | 7 | 3 | 4 | 8 | Effet d'Entrée : Piochez 1 carte. Effet d'Entrée : Réduit de 1 le coût de 1 carte(s) suivante(s) ce tour. |  |
+| Jenji | ★★★ | 6 | 3 | 3 | 7 | Aura : héros récupère 1 PV au début de votre tour. | PF |
+| Notilus | ★★ | 5 | 3 | 3 | 6 | Effet d'Entrée : Réduit de 1 le coût de 1 carte(s) Notes de Frais & Trésorerie suivante(s) ce tour. |  |
+| ONexpense | ★★ | 5 | 2 | 3 | 6 | Effet d'Entrée : héros récupère 2 PV. |  |
+| Yeap | ★★ | 4 | 3 | 2 | 5 | Effet d'Entrée : Piochez 1 carte. |  |
+| SAP Concur | ★★ | 4 | 2 | 3 | 5 | Effet d'Entrée : +2 DEF à une carte alliée du même domaine. |  |
+| Rydoo | ★★ | 3 | 2 | 2 | 5 | Effet d'Entrée : Piochez 1 si vous contrôlez 2+ cartes Notes de Frais & Trésorerie. |  |
+| Expensya | ★★ | 3 | 3 | 1 | 5 | Charge. |  |
+| Carlabella | ★ | 2 | 2 | 2 | 4 | Effet d'Entrée : Regardez la carte du dessus de votre pioche. |  |
+| Pyeo | ★ | 2 | 2 | 1 | 4 | — (carte vanille) |  |
+| Mooncard | ★ | 2 | 1 | 2 | 4 | — (carte vanille) |  |
+| Spendesk | ★ | 1 | 2 | 1 | 3 | — (carte vanille) | PF |
+| Soldo | ★ | 1 | 1 | 1 | 4 | — (carte vanille) |  |
+| Openpaye | ★ | 1 | 1 | 2 | 3 | — (carte vanille) |  |
+
+### 7.10 DÉMATÉRIALISATION & ARCHIVES — Mémoire
+
+| Nom | Niveau | Coût | ATK | DEF | HP | Capacité | PF |
+|---|---|---|---|---|---|---|---|
+| Numeno | ★★★ | 8 | 3 | 5 | 8 | Effet d'Entrée : Piochez 3, gardez 1 (le reste part au cimetière). |  |
+| neoboxRH | ★★★ | 7 | 3 | 4 | 8 | Effet d'Entrée : Regardez les 3 cartes du dessus, choisissez celle que vous piocherez en premier. |  |
+| Esker | ★★★ | 6 | 2 | 4 | 8 | Aura : héros récupère 1 PV à chaque mort d'une carte Dématérialisation & Archives. |  |
+| Zeendoc | ★★ | 5 | 2 | 3 | 7 | Effet d'Entrée : Regardez le dessus de la pioche ; vous pouvez la défausser pour piocher la suivante. |  |
+| Nuxeo | ★★ | 5 | 3 | 3 | 6 | Effet d'Entrée : Regardez le dessus de la pioche adverse. |  |
+| Primobox | ★★ | 4 | 2 | 3 | 6 | Effet d'Entrée : Regardez les 2 cartes du dessus de votre pioche. |  |
+| Digiposte | ★★ | 4 | 2 | 2 | 6 | Effet Final : Piochez 1 carte. |  |
+| Coffreo | ★★ | 3 | 2 | 3 | 5 | Effet d'Entrée : Regardez la carte du dessus de votre pioche. |  |
+| DigiTech | ★★ | 3 | 1 | 3 | 5 | — (carte vanille) |  |
+| Dimo | ★ | 2 | 2 | 2 | 4 | — (carte vanille) |  |
+| Numerize | ★ | 2 | 1 | 2 | 5 | — (carte vanille) |  |
+| Securibox | ★ | 2 | 1 | 2 | 4 | — (carte vanille) | PF |
+| Docaposte | ★ | 1 | 1 | 2 | 4 | — (carte vanille) |  |
+| PeopleDoc | ★ | 1 | 2 | 1 | 3 | — (carte vanille) | PF |
+| CS | ★ | 1 | 1 | 1 | 4 | — (carte vanille) |  |
+
+### 7.11 MOBILITÉ & INTÉGRATION — Élan
+
+| Nom | Niveau | Coût | ATK | DEF | HP | Capacité | PF |
+|---|---|---|---|---|---|---|---|
+| Atlas | ★★★ | 8 | 6 | 3 | 7 | Charge. Effet d'Entrée : +2 ATK à toutes vos cartes Mobilité & Intégration en jeu (ce tour-ci). |  |
+| Helma International | ★★★ | 7 | 5 | 3 | 7 | Effet d'Entrée : Piochez 2 cartes. |  |
+| Topia | ★★★ | 6 | 5 | 2 | 7 | Charge. | PF |
+| AIRINC | ★★ | 5 | 4 | 2 | 6 | Effet d'Entrée : +2 ATK à une carte alliée ciblée. |  |
+| RIVAL | ★★ | 5 | 4 | 3 | 5 | Charge. |  |
+| Talmundo | ★★ | 4 | 4 | 2 | 5 | Effet d'Entrée : Piochez 1 carte. |  |
+| Staff & Go | ★★ | 4 | 3 | 2 | 5 | Charge. |  |
+| Workelo | ★★ | 3 | 3 | 2 | 5 | Effet d'Entrée : Regardez la carte du dessus de votre pioche. |  |
+| HeyTeam | ★★ | 3 | 3 | 1 | 5 | Effet d'Entrée : Piochez 1 si vous contrôlez 2+ cartes Mobilité & Intégration. |  |
+| Knowmore | ★ | 2 | 3 | 1 | 4 | Charge. |  |
+| WelcomApp | ★ | 2 | 2 | 2 | 4 | — (carte vanille) |  |
+| Wobee | ★ | 2 | 2 | 1 | 4 | — (carte vanille) |  |
+| Remote.com | ★ | 1 | 2 | 1 | 3 | — (carte vanille) | PF |
+| Oyster HR | ★ | 1 | 1 | 2 | 3 | — (carte vanille) |  |
+| Papaya Global | ★ | 1 | 2 | 1 | 3 | — (carte vanille) | PF |
+
+### 7.12 DIGITAL WORKPLACE & IA — Réseau
+
+| Nom | Niveau | Coût | ATK | DEF | HP | Capacité | PF |
+|---|---|---|---|---|---|---|---|
+| Powell Software | ★★★ | 8 | 4 | 4 | 8 | Effet d'Entrée : Piochez 1 carte. Effet d'Entrée : Regardez la main adverse. |  |
+| ServiceNow | ★★★ | 7 | 4 | 3 | 7 | Effet d'Entrée : +1 ATK à toutes vos cartes Digital Workplace & IA en jeu (permanent). |  |
+| Intercom | ★★★ | 6 | 3 | 3 | 7 | Aura : +1 ATK au début de votre tour. |  |
+| elium | ★★ | 5 | 3 | 3 | 6 | Effet d'Entrée : Piochez 1 carte. |  |
+| happeo | ★★ | 5 | 3 | 2 | 6 | Effet d'Entrée : +1 ATK à une carte alliée ciblée. |  |
+| Asana | ★★ | 4 | 3 | 2 | 5 | Effet d'Entrée : Piochez 1 si votre main a 3 cartes ou moins. |  |
+| Trello | ★★ | 4 | 2 | 3 | 5 | Effet d'Entrée : Regardez la carte du dessus de votre pioche. |  |
+| Clevy | ★★ | 3 | 3 | 1 | 5 | Effet d'Entrée : Réduit de 1 le coût de 1 carte(s) suivante(s) ce tour. |  |
+| inbenta | ★★ | 3 | 2 | 2 | 5 | Effet d'Entrée : +1 DEF à une carte alliée du même domaine. |  |
+| Jalios | ★ | 2 | 2 | 2 | 4 | — (carte vanille) |  |
+| lumapps | ★ | 2 | 2 | 1 | 4 | Charge. |  |
+| Notion | ★ | 2 | 1 | 2 | 4 | — (carte vanille) |  |
+| HeavenHR | ★ | 1 | 1 | 2 | 3 | — (carte vanille) |  |
+| Crisp | ★ | 1 | 2 | 1 | 3 | — (carte vanille) | PF |
+| dydu | ★ | 1 | 1 | 1 | 4 | — (carte vanille) | PF |
+
+### 7.13 Légendaire — PeopleSpheres
 
 | Nom | Domaine | Niveau | Coût | ATK | DEF | HP | Capacité |
 |---|---|---|---|---|---|---|---|
-| **PeopleSpheres** | Transversal (les 6 domaines) | ∞ | 10 | 6 | 6 | 15 | **Synchronisation Universelle** — Effet d'Entrée : pour chaque domaine différent représenté parmi vos cartes en jeu (hors PeopleSpheres, maximum 6), cette carte gagne +1/+1/+1 permanent et vous piochez 1 carte. Votre héros récupère en plus 1 PV par domaine représenté. (Effet maximal à 6 domaines simultanés : +6/+6/+6, 6 cartes piochées, 6 PV soignés.) |
+| **PeopleSpheres** | Transversal (les 12 domaines) | ∞ | 10 | 6 | 6 | 15 | **Synchronisation Universelle** — Effet d'Entrée : pour chaque domaine différent représenté parmi vos cartes en jeu (hors PeopleSpheres, maximum 6 — plafonné par la taille du plateau), cette carte gagne +1/+1/+1 permanent et vous piochez 1 carte. Votre héros récupère en plus 1 PV par domaine représenté. (Effet maximal à 6 domaines simultanés en jeu : +6/+6/+6, 6 cartes piochées, 6 PV soignés — le plateau ne pouvant contenir plus de 6 autres cartes.) |
 
-PeopleSpheres compte comme membre de chacun des 6 domaines pour l'activation des paliers de synergie (§2), et bénéficie/inflige les modificateurs de la mécanique Point Faible (§4) lorsqu'elle affronte une carte marquée PF.
+PeopleSpheres compte comme membre de chacun des 12 domaines pour l'activation des paliers de synergie (§2), et bénéficie/inflige les modificateurs de la mécanique Point Faible (§4) lorsqu'elle affronte une carte marquée PF.
 
 ---
 
 ## 8. Tableau récapitulatif complet
 
-*(91 cartes : 90 du pool de collection + PeopleSpheres. PF = porte le tag "Point Faible vs PeopleSpheres".)*
+*(Ce tableau couvre le pool "classique" des 6 domaines historiques : 90 cartes-créature + PeopleSpheres. PF = porte le tag "Point Faible vs PeopleSpheres". Pour le détail des cartes-créature des 6 domaines de la Guilde des Éditeurs Spécialisés — ajoutées avec l'extension à 12 domaines — voir §7.7 à §7.12. Les cartes Action des 12 domaines (2 par domaine, effets ponctuels sans stats) ne sont pas reprises dans ce tableau condensé ; voir §7 et la collection en jeu pour leur liste complète.)*
 
 | Nom | Domaine | Niveau | Coût | ATK | DEF | HP | Capacité résumée | PF |
 |---|---|---|---|---|---|---|---|---|
@@ -414,9 +594,10 @@ PeopleSpheres compte comme membre de chacun des 6 domaines pour l'activation des
 | SAS | PILOTAGE/BI | ★ | 1 | 1 | 1 | 4 | Vanille | PF |
 | IBM Cognos | PILOTAGE/BI | ★ | 1 | 1 | 1 | 4 | Vanille | PF |
 | Oracle Hyperion | PILOTAGE/BI | ★ | 1 | 1 | 1 | 4 | Vanille | |
-| **PeopleSpheres** | Transversal | ∞ | 10 | 6 | 6 | 15 | Synchronisation Universelle (scale ×6 domaines) | |
+| **PeopleSpheres** | Transversal | ∞ | 10 | 6 | 6 | 15 | Synchronisation Universelle (scale ×6 cartes alliées max en jeu) | |
 
-**Total : 90 cartes de collection + 1 Légendaire = 91 cartes.**
+**Total pool "classique" (ce tableau) : 90 cartes de collection + 1 Légendaire = 91 cartes.**
+**Total pool complet du jeu (12 domaines, §7) : 204 cartes de collection (17 par domaine × 12) + 1 Légendaire = 205 cartes.**
 
 ---
 

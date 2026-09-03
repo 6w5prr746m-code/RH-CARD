@@ -91,6 +91,7 @@ function createPlayerState(id, deckList, avatarDomain) {
     recruitmentFirstDiscountUsed: false,
     pilotageDrawUpgradeUsed: false,
     pilotageSwapUsed: false,
+    archiveReclaimUsed: false,
     heroPowerDomain: (avatarDomain && SYNERGY_DOMAINS.includes(avatarDomain)) ? avatarDomain : computeDominantDomain(deckList),
     heroPowerUsedThisTurn: false,
     catchUpActive: false,
@@ -195,10 +196,14 @@ function startTurn(state, playerId) {
   p.catchUpActive = p.heroHp <= p.heroMaxHp * 0.4 && p.heroHp < opp.heroHp;
   if (p.catchUpActive) p.mana = clamp(p.mana + 1, 0, p.maxMana + 1);
 
+  const tresorerieBonus = tresorerieManaBonus(getSynergyTiers(p.board)[DOMAIN.TRESORERIE]);
+  if (tresorerieBonus > 0) p.mana = clamp(p.mana + tresorerieBonus, 0, p.maxMana + tresorerieBonus);
+
   p.activeDiscounts = [];
   p.recruitmentFirstDiscountUsed = false;
   p.pilotageDrawUpgradeUsed = false;
   p.pilotageSwapUsed = false;
+  p.archiveReclaimUsed = false;
   p.heroPowerUsedThisTurn = false;
 
   for (const c of p.board) {
@@ -268,6 +273,12 @@ function applyTurnStartSynergy(state, playerId) {
   if (pilotageFeatures(tiers[DOMAIN.PILOTAGE_BI]).peekOwnTopEachTurn && p.deck.length > 0) {
     if (playerId === 'player') {
       state.pendingReveal = { title: 'Pilotage/BI — dessus de votre pioche', cards: [p.deck[0]] };
+    }
+  }
+
+  if (archiveFeatures(tiers[DOMAIN.ARCHIVES]).peekTopEachTurn && p.deck.length > 0 && !state.pendingReveal) {
+    if (playerId === 'player') {
+      state.pendingReveal = { title: 'Archives — dessus de votre pioche', cards: [p.deck[0]] };
     }
   }
 }
@@ -351,7 +362,7 @@ function healHero(state, playerId, amount) {
 function heroDamageReduction(state, playerId) {
   const p = state.players[playerId];
   const tiers = getSynergyTiers(p.board);
-  let reduction = paieGaDamageReduction(tiers[DOMAIN.PAIE_GA]);
+  let reduction = paieGaDamageReduction(tiers[DOMAIN.PAIE_GA]) + preventionDamageReduction(tiers[DOMAIN.PREVENTION]);
   for (const c of p.board) {
     if (!c.silenced && c.aura && c.aura.type === 'heroDamageReduction') reduction += c.aura.amount;
   }
@@ -403,6 +414,16 @@ function getEffectiveAtk(state, playerId, card) {
     const tiers = getSynergyTiers(p.board);
     atk += talentAtkBonus(tiers[DOMAIN.TALENT_PERF]);
   }
+  if (!card.silenced && card.domain === DOMAIN.RESEAU) {
+    const tiers = getSynergyTiers(p.board);
+    const cap = reseauDomainCap(tiers[DOMAIN.RESEAU]);
+    if (cap > 0) {
+      const distinctDomains = new Set(p.board.filter(c => c.domain && c.domain !== DOMAIN.TRANSVERSAL).map(c => c.domain)).size;
+      atk += Math.min(cap, distinctDomains);
+    }
+  }
+  const oppTiers = getSynergyTiers(state.players[opponentOf(playerId)].board);
+  atk -= conformiteAtkPenalty(oppTiers[DOMAIN.CONFORMITE]);
   return Math.max(0, atk);
 }
 
@@ -481,7 +502,23 @@ function playCard(state, playerId, handUid) {
   if (isAction) {
     p.graveyard.push(card);
   } else {
-    card.summoningSick = !card.keywords.has('Charge');
+    let grantedCharge = false;
+    if (card.domain === DOMAIN.MOBILITE) {
+      const mf = mobiliteFeatures(getSynergyTiers(p.board)[DOMAIN.MOBILITE]);
+      if (mf.chargeGrantAll) {
+        grantedCharge = true;
+      } else if (mf.chargeGrantBest) {
+        const mobBoard = p.board.filter(c => c.domain === DOMAIN.MOBILITE);
+        const bestHp = mobBoard.length ? Math.max(...mobBoard.map(c => c.currentHp)) : -Infinity;
+        if (card.currentHp >= bestHp) grantedCharge = true;
+      }
+      if (mf.bonusOnPlay) {
+        card.currentAtk += 1;
+        card.currentHp += 1;
+        card.maxHp += 1;
+      }
+    }
+    card.summoningSick = !(card.keywords.has('Charge') || grantedCharge);
     card.hasAttackedThisTurn = false;
     p.board.push(card);
   }
@@ -992,5 +1029,19 @@ function pilotageSwap(state, playerId, handUid) {
   p.pilotageSwapUsed = true;
   drawCards(state, playerId, 1);
   log(state, `${playerId === 'player' ? 'Vous échangez' : "L'IA échange"} ${card.name}.`);
+  return { ok: true };
+}
+
+function archiveReclaim(state, playerId) {
+  const p = state.players[playerId];
+  const tiers = getSynergyTiers(p.board);
+  if (!archiveFeatures(tiers[DOMAIN.ARCHIVES]).reclaimOncePerTurn) return { ok: false, error: 'Synergie Archives palier 6 non active.' };
+  if (p.archiveReclaimUsed) return { ok: false, error: 'Déjà utilisé ce tour-ci.' };
+  if (p.graveyard.length === 0) return { ok: false, error: 'Défausse vide.' };
+  if (p.hand.length >= MAX_HAND) return { ok: false, error: 'Main pleine.' };
+  const card = p.graveyard.pop();
+  p.hand.push(card);
+  p.archiveReclaimUsed = true;
+  log(state, `${playerId === 'player' ? 'Vous récupérez' : "L'IA récupère"} ${card.name} depuis les archives.`);
   return { ok: true };
 }

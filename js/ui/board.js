@@ -878,6 +878,12 @@ const SYNERGY_SUMMARY = {
   [DOMAIN.FORMATION]: { 2: '+1 ATK/+1 HP par tour', 4: '+1 ATK/+1 DEF/+1 HP par tour', 6: 'Gain doublé (×2)' },
   [DOMAIN.TALENT_PERF]: { 2: '+1 ATK (domaine)', 4: '+3 ATK (domaine)', 6: '+6 ATK (domaine)' },
   [DOMAIN.PILOTAGE_BI]: { 2: 'Regard dessus pioche', 4: '+ Pioche améliorée 1x/tour', 6: '+ Échange main 1x/tour' },
+  [DOMAIN.PREVENTION]: { 2: 'Réduction dégâts -1', 4: 'Réduction dégâts -2', 6: 'Réduction dégâts -3' },
+  [DOMAIN.CONFORMITE]: { 2: 'ATK ennemi -1', 4: 'ATK ennemi -2', 6: 'ATK ennemi -3' },
+  [DOMAIN.TRESORERIE]: { 2: '+1 mana au tour', 4: '+2 mana au tour', 6: '+3 mana au tour' },
+  [DOMAIN.ARCHIVES]: { 2: 'Regard dessus pioche', 4: 'Regard dessus pioche', 6: '+ Récupération défausse 1x/tour' },
+  [DOMAIN.MOBILITE]: { 2: '+1 ATK/+1 HP à la pose', 4: '+ Charge (meilleure carte)', 6: '+ Charge (toutes)' },
+  [DOMAIN.RESEAU]: { 2: '+ATK selon domaines (max 2)', 4: '+ATK selon domaines (max 4)', 6: '+ATK selon domaines (max 6)' },
 };
 
 function renderSynergyPanel(board) {

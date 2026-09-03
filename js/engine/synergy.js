@@ -4,6 +4,8 @@
 const SYNERGY_DOMAINS = [
   DOMAIN.PAIE_GA, DOMAIN.GTA, DOMAIN.RECRUTEMENT,
   DOMAIN.FORMATION, DOMAIN.TALENT_PERF, DOMAIN.PILOTAGE_BI,
+  DOMAIN.PREVENTION, DOMAIN.CONFORMITE, DOMAIN.TRESORERIE,
+  DOMAIN.ARCHIVES, DOMAIN.MOBILITE, DOMAIN.RESEAU,
 ];
 
 // PeopleSpheres is transversal: it counts toward every domain's synergy tally.
@@ -106,4 +108,57 @@ function pilotageFeatures(tier) {
     upgradeDrawOncePerTurn: tier >= 4,
     swapHandCardOncePerTurn: tier >= 6,
   };
+}
+
+// ---- PREVENTION — Sécurité (Golems de garde) ----
+function preventionDamageReduction(tier) {
+  if (tier >= 6) return 3;
+  if (tier >= 4) return 2;
+  if (tier >= 2) return 1;
+  return 0;
+}
+
+// ---- CONFORMITE — Contrôle (Djinns du droit) ----
+// Shrinks every enemy creature's attack while this player's CONFORMITE synergy is active.
+function conformiteAtkPenalty(tier) {
+  if (tier >= 6) return 3;
+  if (tier >= 4) return 2;
+  if (tier >= 2) return 1;
+  return 0;
+}
+
+// ---- TRESORERIE — Notes de Frais & Trésorerie (Gobelins comptables) ----
+// Extra temporary mana granted at the start of this player's turn.
+function tresorerieManaBonus(tier) {
+  if (tier >= 6) return 3;
+  if (tier >= 4) return 2;
+  if (tier >= 2) return 1;
+  return 0;
+}
+
+// ---- ARCHIVES — Dématérialisation & Archives (Spectres archivistes) ----
+function archiveFeatures(tier) {
+  return {
+    peekTopEachTurn: tier >= 2,
+    reclaimOncePerTurn: tier >= 6,
+  };
+}
+
+// ---- MOBILITE — Mobilité & Intégration (Fées voyageuses) ----
+function mobiliteFeatures(tier) {
+  return {
+    bonusOnPlay: tier >= 2,
+    chargeGrantBest: tier >= 4,
+    chargeGrantAll: tier >= 6,
+  };
+}
+
+// ---- RESEAU — Digital Workplace & IA (Araignées du réseau) ----
+// ATK bonus for RESEAU cards, scaling with the number of distinct domains on
+// this player's board, capped by the synergy tier.
+function reseauDomainCap(tier) {
+  if (tier >= 6) return 6;
+  if (tier >= 4) return 4;
+  if (tier >= 2) return 2;
+  return 0;
 }

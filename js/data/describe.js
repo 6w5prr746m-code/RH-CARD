@@ -35,7 +35,7 @@ function describeEffect(effect, domainSelf) {
       return `${stats} à toutes vos cartes ${domain} en jeu${effect.duration === 'turn' ? ' (ce tour-ci)' : ' (permanent)'}.`;
     }
     case 'costReduction':
-      return `Réduit de ${effect.amount} le coût de ${effect.count} carte(s) ${effect.domain === 'any' ? '' : DOMAIN_LABELS[effect.domain] + ' '}suivante(s) ce tour.`;
+      return `Réduit de ${effect.amount} le coût de ${effect.count} carte(s) ${effect.domain === 'any' ? '' : DOMAIN_LABELS[effect.domain === 'self' ? domainSelf : effect.domain] + ' '}suivante(s) ce tour.`;
     case 'condDrawIfDomainCount':
       return `Piochez ${effect.amount} si vous contrôlez ${effect.min}+ cartes ${DOMAIN_LABELS[effect.domain]}.`;
     case 'condDrawIfHandSize':
@@ -87,7 +87,7 @@ function cardAbilityText(card) {
   for (const e of card.onPlay || []) parts.push(`Effet d'Entrée : ${describeEffect(e, card.domain)}`);
   for (const e of card.onDeath || []) parts.push(`Effet Final : ${describeEffect(e, card.domain)}`);
   if (card.cardId === 'peoplespheres' || card.id === 'peoplespheres') {
-    parts.push('Compte comme membre des 6 domaines pour les synergies.');
+    parts.push(`Compte comme membre des ${SYNERGY_DOMAINS.length} domaines pour les synergies.`);
   }
   if (parts.length === 0) return 'Carte vanille (aucune capacité spéciale).';
   return parts.join(' ');

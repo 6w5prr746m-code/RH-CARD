@@ -75,12 +75,12 @@ const ACHIEVEMENTS = [
   { id: 'local_duel', label: 'Duel entre amis', desc: 'Terminez une partie en duel local.', boosters: 1, check: s => s.localGames >= 1 },
   { id: 'ten_boosters', label: 'Collectionneur', desc: 'Ouvrez 10 boosters.', boosters: 1, check: s => s.boostersOpened >= 10 },
   { id: 'half_collection', label: 'Mi-collection', desc: 'Débloquez la moitié des cartes.', boosters: 2, check: () => ownedUniqueCardCount() >= Math.ceil(ALL_CARDS.length / 2) },
-  { id: 'full_collection', label: 'Collection complète', desc: 'Débloquez les 103 cartes.', boosters: 3, check: () => ownedUniqueCardCount() >= ALL_CARDS.length },
+  { id: 'full_collection', label: 'Collection complète', desc: `Débloquez les ${ALL_CARDS.length} cartes.`, boosters: 3, check: () => ownedUniqueCardCount() >= ALL_CARDS.length },
   { id: 'week_streak', label: 'Habitué·e', desc: 'Connectez-vous 7 jours d\'affilée.', boosters: 2, check: (s, p) => p.streak.count >= 7 },
   { id: 'campaign_first_stage', label: 'Premier contrat', desc: 'Remportez la première étape de la campagne.', boosters: 1, check: (s, p) => p.campaign.cleared.includes('cabinet-local') },
   { id: 'campaign_boss', label: 'Vainqueur du Consortium', desc: "Battez l'étape finale de la campagne.", boosters: 2, check: (s, p) => p.campaign.cleared.includes('consortium-mondial') },
   { id: 'campaign_complete', label: 'Repreneur du marché', desc: 'Terminez les 8 étapes de la campagne.', boosters: 3, check: (s, p) => p.campaign.cleared.length >= CAMPAIGN_STAGES.length },
-  { id: 'domain_mastery', label: 'Maîtrise complète', desc: 'Remportez une partie avec chacun des 6 domaines comme archétype dominant.', boosters: 3, check: (s, p) => p.domainsWonWith.length >= SYNERGY_DOMAINS.length },
+  { id: 'domain_mastery', label: 'Maîtrise complète', desc: 'Remportez une partie avec chacun des 12 domaines comme archétype dominant.', boosters: 3, check: (s, p) => p.domainsWonWith.length >= SYNERGY_DOMAINS.length },
   { id: 'hero_power_veteran', label: 'Pouvoir en main', desc: 'Utilisez un pouvoir héroïque 10 fois.', boosters: 1, check: s => s.heroPowersUsed >= 10 },
 ];
 
