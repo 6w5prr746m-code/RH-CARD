@@ -601,4 +601,23 @@ PeopleSpheres compte comme membre de chacun des 12 domaines pour l'activation de
 
 ---
 
+## 9. Évolution des cartes (niveaux)
+
+Chaque carte possédée progresse **individuellement**, indépendamment du nombre d'exemplaires détenus, à travers 7 paliers :
+
+| Niveau | 0 | 1 | 2 | 3 | 4 | 5 | 6 |
+|---|---|---|---|---|---|---|---|
+| Nom | New | Junior | Expert | Senior | Sage | Légende | Immortel |
+
+**Gain d'XP :** seules les cartes du joueur humain (jamais celles de l'IA) gagnent de l'XP, et uniquement les cartes réellement jouées lors d'une partie (présentes sur le plateau ou au cimetière en fin de partie — celles restées en main ou en pioche ne gagnent rien). Le gain dépend de l'issue de la partie : ~4 XP en défaite, ~6 en égalité, ~9 en victoire, +3 XP supplémentaires si la carte est encore en jeu à la fin d'une victoire.
+
+**Effets du niveau :**
+- **Stats** : bonus permanent croissant à l'ATK/DEF/HP (cartes créature uniquement, de +0 au niveau 0 à +2/+2/+3 au niveau 6).
+- **Capacité de niveau** : à partir de Sage (niveau 4), la carte débloque une capacité passive supplémentaire tirée d'un pool de 10 capacités propres à son domaine (soin, pioche conditionnelle, réduction de coût, buff de domaine, etc.) — chaque carte d'un même domaine se voit assigner une capacité fixe et différente (choix déterministe par carte), ce qui évite que toutes les cartes d'un domaine jouent identiquement une fois montées en niveau.
+- **Cosmétique** : un badge coloré (bronze → argent → or → diamant) affiché sur la carte partout où elle apparaît (plateau, main, deck builder, collection).
+
+Cette progression est strictement liée au profil du joueur sur cet appareil (stockage local) et ne s'applique jamais aux cartes de l'IA, y compris en mode Duel local où seul le siège "joueur" (celui du bas) en bénéficie.
+
+---
+
 *Fin du document. En attente de validation avant lancement de l'implémentation.*

@@ -19,9 +19,20 @@ function shuffle(arr) {
   return a;
 }
 
-function makeCardInstance(cardId) {
+// applyLevel: only the human player's own seat draws on the persistent
+// per-card level/XP profile (js/data/card-levels.js) — an AI-generated deck
+// isn't drawn from the player's collection, so it never gets the bonus (see
+// createPlayerState below, which only passes true for id === 'player').
+function makeCardInstance(cardId, applyLevel) {
   const tpl = CARDS_BY_ID[cardId];
   if (!tpl) throw new Error(`Unknown card id: ${cardId}`);
+  const level = applyLevel ? getCardLevel(cardId) : 0;
+  const isMinion = (tpl.cardType || 'MINION') === 'MINION';
+  const bonus = isMinion ? LEVEL_STAT_BONUS[level] : { atk: 0, def: 0, hp: 0 };
+  const atk = (tpl.atk || 0) + bonus.atk;
+  const def = (tpl.def || 0) + bonus.def;
+  const hp = (tpl.hp || 0) + bonus.hp;
+  const levelAbility = applyLevel ? cardLevelAbility(cardId, tpl.domain) : null;
   return {
     uid: nextUid('c'),
     cardId,
@@ -30,16 +41,17 @@ function makeCardInstance(cardId) {
     domain: tpl.domain,
     rarity: tpl.rarity,
     baseCost: tpl.cost,
-    baseAtk: tpl.atk || 0,
-    baseDef: tpl.def || 0,
-    baseHp: tpl.hp || 0,
-    currentAtk: tpl.atk || 0,
-    currentDef: tpl.def || 0,
-    currentHp: tpl.hp || 0,
-    maxHp: tpl.hp || 0,
+    baseAtk: atk,
+    baseDef: def,
+    baseHp: hp,
+    currentAtk: atk,
+    currentDef: def,
+    currentHp: hp,
+    maxHp: hp,
     keywords: new Set(tpl.keywords || []),
     pointFaible: !!tpl.pointFaible,
-    onPlay: tpl.onPlay || [],
+    level,
+    onPlay: levelAbility ? [...(tpl.onPlay || []), ...levelAbility.effects] : (tpl.onPlay || []),
     onDeath: tpl.onDeath || [],
     aura: tpl.aura || null,
     summoningSick: true,
@@ -50,8 +62,8 @@ function makeCardInstance(cardId) {
 }
 
 // deckList: array of cardId strings, one entry per copy (length 25-30).
-function buildDeckInstances(deckList) {
-  return deckList.map(makeCardInstance);
+function buildDeckInstances(deckList, applyLevel) {
+  return deckList.map(id => makeCardInstance(id, applyLevel));
 }
 
 function validateDeck(deckList) {
@@ -82,7 +94,7 @@ function createPlayerState(id, deckList, avatarDomain) {
     heroMaxHp: HERO_MAX_HP,
     mana: 0,
     maxMana: 0,
-    deck: shuffle(buildDeckInstances(deckList)),
+    deck: shuffle(buildDeckInstances(deckList, id === 'player')),
     hand: [],
     board: [],
     graveyard: [],

@@ -84,13 +84,30 @@ function cardAbilityText(card) {
       parts.push(`Aura : héros récupère ${a.heal} PV à chaque mort d'une carte ${domain}.`);
     }
   }
-  for (const e of card.onPlay || []) parts.push(`Effet d'Entrée : ${describeEffect(e, card.domain)}`);
-  for (const e of card.onDeath || []) parts.push(`Effet Final : ${describeEffect(e, card.domain)}`);
-  if (card.cardId === 'peoplespheres' || card.id === 'peoplespheres') {
+  // Always described from the static template's own onPlay/onDeath — a live
+  // game instance's onPlay may have a level ability merged in (see
+  // makeCardInstance in engine.js) for execution purposes, but that's
+  // described separately below so it reads as its own distinct line rather
+  // than an unlabeled extra "Effet d'Entrée".
+  const cardId = card.cardId || card.id;
+  const tpl = CARDS_BY_ID[cardId] || card;
+  for (const e of tpl.onPlay || []) parts.push(`Effet d'Entrée : ${describeEffect(e, card.domain)}`);
+  for (const e of tpl.onDeath || []) parts.push(`Effet Final : ${describeEffect(e, card.domain)}`);
+  if (cardId === 'peoplespheres') {
     parts.push(`Compte comme membre des ${SYNERGY_DOMAINS.length} domaines pour les synergies.`);
+  }
+  const levelAbility = cardLevelAbility(cardId, card.domain);
+  if (levelAbility) {
+    parts.push(`Capacité de Niveau (${levelLabel(LEVEL_ABILITY_UNLOCK)}+) : ${levelAbility.label} — ${levelAbility.desc}`);
   }
   if (parts.length === 0) return 'Carte vanille (aucune capacité spéciale).';
   return parts.join(' ');
+}
+
+function cardLevelText(card) {
+  const cardId = card.cardId || card.id;
+  const level = getCardLevel(cardId);
+  return `Niveau ${level} — ${levelLabel(level)} (${levelProgressText(cardId)})`;
 }
 
 function rarityLabel(rarity) {

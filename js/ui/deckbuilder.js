@@ -266,6 +266,7 @@ function cardTileHtml(card) {
       ${count > 0 ? `<div class="count-badge">×${count}</div>` : ''}
       <div class="cf-top">
         <span class="cf-name"><span class="domain-icon">${DOMAIN_ICONS[card.domain] || ''}</span>${card.name}</span>
+        ${getCardLevel(card.id) > 0 ? `<div class="level-badge ${levelClass(getCardLevel(card.id))}" title="${levelLabel(getCardLevel(card.id))}">${levelAbbr(getCardLevel(card.id))}</div>` : ''}
         <span class="cf-cost">${card.cost}</span>
       </div>
       <div class="cf-bottom">
@@ -303,6 +304,7 @@ function binderTileHtml(card) {
       <div class="count-badge">×${owned}</div>
       <div class="cf-top">
         <span class="cf-name"><span class="domain-icon">${DOMAIN_ICONS[card.domain] || ''}</span>${card.name}</span>
+        ${getCardLevel(card.id) > 0 ? `<div class="level-badge ${levelClass(getCardLevel(card.id))}" title="${levelLabel(getCardLevel(card.id))}">${levelAbbr(getCardLevel(card.id))}</div>` : ''}
         <span class="cf-cost">${card.cost}</span>
       </div>
       <div class="cf-bottom">

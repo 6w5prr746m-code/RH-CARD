@@ -77,6 +77,8 @@ function cardZoomHtml(card, { closable } = {}) {
   const hp = card.currentHp ?? card.hp;
   const maxHp = card.maxHp ?? card.hp;
   const cost = card.baseCost ?? card.cost;
+  const cardId = card.cardId || card.id;
+  const level = getCardLevel(cardId);
   return `
     <div class="card-zoom card-face ${rarityClass(card.rarity)}" style="--dcolor:${color}">
       ${closable ? '<button class="card-zoom-close" aria-label="Fermer">✕</button>' : ''}
@@ -84,6 +86,7 @@ function cardZoomHtml(card, { closable } = {}) {
       <div class="card-art-scrim"></div>
       <div class="cf-top">
         <span class="cf-name"><span class="domain-icon">${DOMAIN_ICONS[card.domain] || ''}</span>${card.name}</span>
+        ${level > 0 ? `<div class="level-badge ${levelClass(level)}" title="${escapeAttr(levelLabel(level))}">${levelAbbr(level)}</div>` : ''}
         <span class="cf-cost">${cost}</span>
       </div>
       <div class="cf-bottom">
@@ -95,6 +98,7 @@ function cardZoomHtml(card, { closable } = {}) {
           <div><span class="mc-hp">${hp}${hp !== maxHp ? `/${maxHp}` : ''}</span>HP</div>
         </div>`}
         ${card.pointFaible ? '<div class="cz-pf">⚠ Point Faible vs PeopleSpheres</div>' : ''}
+        <div class="cz-level">${cardLevelText(card)}</div>
         <div class="cz-ability">${cardAbilityText(card)}</div>
         ${cardFlavorText(card) ? `<div class="cz-flavor">${cardFlavorText(card)}</div>` : ''}
       </div>
@@ -482,13 +486,16 @@ function checkSynergyToasts(seatId, board) {
   }
 }
 
-function flashError(msg) {
+function showToast(msg, kind) {
   const toast = document.getElementById('toast');
   toast.textContent = msg;
   toast.classList.remove('hidden');
-  clearTimeout(flashError._t);
-  flashError._t = setTimeout(() => toast.classList.add('hidden'), 2200);
+  toast.classList.toggle('toast-success', kind === 'success');
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(() => toast.classList.add('hidden'), 2600);
 }
+
+function flashError(msg) { showToast(msg, 'error'); }
 
 // ---------------------------------------------------------------- interactions
 
@@ -881,6 +888,7 @@ function miniCardHtml(state, ownerId, card, opts) {
       <div class="card-art">${cardArtMarkup(card)}</div>
       <div class="card-art-scrim"></div>
       ${card.pointFaible ? '<div class="pf-flag">PF</div>' : ''}
+      ${card.level > 0 ? `<div class="level-badge ${levelClass(card.level)}" title="${escapeAttr(levelLabel(card.level))}">${levelAbbr(card.level)}</div>` : ''}
       <div class="mc-name"><span class="domain-icon">${DOMAIN_ICONS[card.domain] || ''}</span>${card.name}</div>
       <div class="mc-kw">${kwLabel}</div>
       <div class="mc-stats">
@@ -1258,6 +1266,28 @@ function renderHpChart(canvas, hpHistory) {
   }
 }
 
+// Card evolution XP — only the 'player' seat's cards accrue XP (see
+// makeCardInstance/createPlayerState in engine.js, which restrict the level
+// bonus to that same seat). A card only earns XP if it was actually played
+// this game (found on the board or in the graveyard at game end) — cards
+// left sitting in hand/deck never got used, so they earn nothing.
+function xpGainForCard(card, resultKey) {
+  const mult = resultKey === 'win' ? 1.5 : resultKey === 'draw' ? 1.0 : 0.6;
+  let xp = Math.round(6 * mult);
+  if (resultKey === 'win') xp += 3; // survived to see the game won
+  return xp;
+}
+
+function awardCardLevelXp(playerState, resultKey) {
+  const leveledUp = [];
+  for (const card of [...playerState.board, ...playerState.graveyard]) {
+    const gain = xpGainForCard(card, resultKey);
+    const { oldLevel, newLevel } = addCardXp(card.cardId, gain);
+    if (newLevel > oldLevel) leveledUp.push({ name: card.name, newLevel });
+  }
+  return leveledUp;
+}
+
 function showGameOver() {
   clearSavedGameState();
   const root = document.getElementById('modal-root');
@@ -1283,6 +1313,16 @@ function showGameOver() {
     if (campaignResult.campaignComplete || (stage && stage.boss)) {
       spawnFireworks(campaignResult.campaignComplete ? 10 : 6);
     }
+  }
+
+  // The 'player' seat is the only one carrying a persistent level profile
+  // (see engine.js), regardless of vs-AI/campaign/local2p — so its own
+  // win/loss/draw (not the local2p-aware playerWonVsAi above) decides XP.
+  const playerCardResult = draw ? 'draw' : (gameState.winner === 'player' ? 'win' : 'loss');
+  const leveledUpCards = awardCardLevelXp(gameState.players.player, playerCardResult);
+  if (leveledUpCards.length > 0) {
+    const msg = leveledUpCards.map(c => `🎉 ${c.name} passe ${levelLabel(c.newLevel)} !`).join(' ');
+    showToast(msg, 'success');
   }
 
   const title = draw ? 'Égalité' : local ? `${winnerName} remporte le duel !` : (playerWonVsAi ? 'Victoire !' : 'Défaite');
