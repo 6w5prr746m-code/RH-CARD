@@ -97,3 +97,7 @@ function rarityLabel(rarity) {
   if (rarity === 'L') return '∞';
   return '★'.repeat(rarity);
 }
+
+function cardFlavorText(card) {
+  return CARD_FLAVOR[card.cardId || card.id] || '';
+}

@@ -96,6 +96,7 @@ function cardZoomHtml(card, { closable } = {}) {
         </div>`}
         ${card.pointFaible ? '<div class="cz-pf">⚠ Point Faible vs PeopleSpheres</div>' : ''}
         <div class="cz-ability">${cardAbilityText(card)}</div>
+        ${cardFlavorText(card) ? `<div class="cz-flavor">${cardFlavorText(card)}</div>` : ''}
       </div>
     </div>`;
 }
@@ -211,6 +212,18 @@ function initBoardUI() {
     const el = e.target.closest('.mini-card');
     if (el) onEnemyBoardCardClick(el.dataset.uid);
   });
+  for (const boardId of ['player-board', 'ai-board']) {
+    const boardEl = document.getElementById(boardId);
+    boardEl.addEventListener('mouseover', (e) => {
+      const el = e.target.closest('.mini-card');
+      if (!el) return;
+      const card = resolveCardFromElement(el);
+      if (card) showHoverPreview(card, el);
+    });
+    boardEl.addEventListener('mouseout', (e) => {
+      if (e.target.closest('.mini-card')) hideHoverPreview();
+    });
+  }
   document.getElementById('ai-hero-target').addEventListener('click', onEnemyHeroClick);
   document.getElementById('end-turn-btn').addEventListener('click', () => { SFX.play('click'); handleEndTurn(); });
   document.getElementById('hero-power-btn').addEventListener('click', onHeroPowerClick);
