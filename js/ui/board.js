@@ -638,6 +638,11 @@ function renderHeroPortrait(elId, seatId, playerState) {
     const ext = HERO_FACE_REAL_IDS.get(domain);
     const slug = domain.toLowerCase().replace(/_/g, '-');
     el.innerHTML = `<img class="hero-portrait-img" src="art/heroes/hero-${slug}.${ext}" alt="" onerror="this.outerHTML='${emoji}';">`;
+  } else if (domain === DOMAIN.TRANSVERSAL && REAL_ART_IDS.has('peoplespheres')) {
+    // No dedicated hero-transversal portrait yet — the PeopleSpheres
+    // legendary card's own illustration doubles as the player's hero face.
+    const ext = REAL_ART_IDS.get('peoplespheres');
+    el.innerHTML = `<img class="hero-portrait-img" src="art/peoplespheres.${ext}" alt="" onerror="this.outerHTML='${emoji}';">`;
   } else {
     el.textContent = emoji;
   }

@@ -18,7 +18,28 @@
 // png/webp also supported). Empty until artwork is generated and dropped in
 // — see docs/card-art-prompts.md for the per-card prompts used to generate
 // them externally.
-const REAL_ART_IDS = new Map([]);
+const REAL_ART_IDS = new Map([
+  ['adp', 'jpg'],
+  ['audit-paie-express', 'jpg'],
+  ['cegedim', 'jpg'],
+  ['cegid', 'jpg'],
+  ['ceridian-dayforce', 'jpg'],
+  ['deel', 'jpg'],
+  ['horoquartz', 'jpg'],
+  ['infor', 'jpg'],
+  ['inser', 'jpg'],
+  ['kelio', 'jpg'],
+  ['nibelis', 'jpg'],
+  ['novrh', 'jpg'],
+  ['oracle', 'jpg'],
+  ['payfit', 'jpg'],
+  ['peoplespheres', 'jpg'],
+  ['plan-de-continuite', 'jpg'],
+  ['sap-successfactors', 'jpg'],
+  ['sd-worx', 'jpg'],
+  ['sigma-rh', 'jpg'],
+  ['talentia', 'jpg'],
+]);
 
 function hashStringToSeed(str) {
   let h = 2166136261;
