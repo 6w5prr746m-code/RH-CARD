@@ -96,7 +96,20 @@ const DOMAIN_FACE_ICONS = {
 // until portraits are generated and dropped in — see
 // docs/hero-portrait-prompts.md for the per-domain prompts used to generate
 // them externally.
-const HERO_FACE_REAL_IDS = new Map([]);
+const HERO_FACE_REAL_IDS = new Map([
+  [DOMAIN.PAIE_GA, 'jpg'],
+  [DOMAIN.GTA, 'jpg'],
+  [DOMAIN.RECRUTEMENT, 'jpg'],
+  [DOMAIN.FORMATION, 'jpg'],
+  [DOMAIN.TALENT_PERF, 'jpg'],
+  [DOMAIN.PILOTAGE_BI, 'jpg'],
+  [DOMAIN.PREVENTION, 'jpg'],
+  [DOMAIN.CONFORMITE, 'jpg'],
+  [DOMAIN.TRESORERIE, 'jpg'],
+  [DOMAIN.ARCHIVES, 'jpg'],
+  [DOMAIN.MOBILITE, 'jpg'],
+  [DOMAIN.RESEAU, 'jpg'],
+]);
 
 // One hero power per domain, auto-assigned to each player from their deck's
 // dominant domain (see computeDominantDomain in engine.js) — no separate
