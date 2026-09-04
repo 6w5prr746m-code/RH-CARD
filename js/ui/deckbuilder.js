@@ -297,7 +297,7 @@ function binderTileHtml(card) {
   const color = DOMAIN_COLORS[card.domain] || '#666';
   const isAction = card.cardType === 'ACTION';
   return `
-    <div class="card-tile card-face ${rarityClass(card.rarity)}" style="--dcolor:${color}">
+    <div class="card-tile card-face ${rarityClass(card.rarity)}" data-id="${card.id}" style="--dcolor:${color}">
       <div class="card-art">${cardArtMarkup(card)}</div>
       <div class="card-art-scrim"></div>
       <div class="count-badge">×${owned}</div>
@@ -350,8 +350,17 @@ function renderCollectionBinder() {
     });
   });
   document.getElementById('binder-grid').innerHTML = binderPoolForFilter().map(binderTileHtml).join('');
-  document.getElementById('binder-overlay').addEventListener('click', (e) => { if (e.target.id === 'binder-overlay') root.innerHTML = ''; });
-  document.getElementById('binder-close').addEventListener('click', () => { root.innerHTML = ''; });
+  document.getElementById('binder-grid').addEventListener('mouseover', (e) => {
+    const tile = e.target.closest('.card-tile');
+    if (!tile || !tile.dataset.id) return;
+    const card = CARDS_BY_ID[tile.dataset.id];
+    if (card) showHoverPreview(card, tile);
+  });
+  document.getElementById('binder-grid').addEventListener('mouseout', (e) => {
+    if (e.target.closest('.card-tile')) hideHoverPreview();
+  });
+  document.getElementById('binder-overlay').addEventListener('click', (e) => { if (e.target.id === 'binder-overlay') { hideHoverPreview(); root.innerHTML = ''; } });
+  document.getElementById('binder-close').addEventListener('click', () => { hideHoverPreview(); root.innerHTML = ''; });
 }
 
 function renderDeckPanel() {
