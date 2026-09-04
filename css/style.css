@@ -229,18 +229,22 @@ select {
 .cf-stats .mc-hp { color: #a5d6a7; }
 /* Stat pills (board mini-cards, hand cards, deck-builder tiles): a solid
    dark badge behind each number, so it stays legible over any art —
-   bright, busy, or otherwise — instead of relying on colored text alone. */
+   bright, busy, or otherwise — instead of relying on colored text alone.
+   Kept deliberately tight (small padding, no border, shrinkable) since the
+   mini-card context has as little as ~90px to fit all three in. */
 .mc-stats span, .cf-stats span {
-  display: inline-flex; align-items: center; gap: 2px;
+  display: inline-flex; align-items: center; gap: 1px;
   background: rgba(8,10,16,0.72);
-  border: 1px solid rgba(255,255,255,0.22);
-  border-radius: 5px;
-  padding: 1px 5px;
+  border-radius: 4px;
+  padding: 0 3px;
   text-shadow: none;
+  white-space: nowrap;
+  min-width: 0;
+  flex: 0 1 auto;
 }
-.mc-atk::before { content: '⚔️'; font-size: 0.85em; }
-.mc-def::before { content: '🛡️'; font-size: 0.85em; }
-.mc-hp::before { content: '❤️'; font-size: 0.85em; }
+.mc-atk::before { content: '⚔️'; font-size: 0.8em; }
+.mc-def::before { content: '🛡️'; font-size: 0.8em; }
+.mc-hp::before { content: '❤️'; font-size: 0.8em; }
 .cf-pf { color: #ff8fa3; font-size: 9px; font-weight: 800; text-shadow: 0 1px 3px rgba(0,0,0,0.95); }
 .cf-cost {
   flex-shrink: 0; background: #2050a0; color: #fff; border-radius: 50%;
@@ -435,6 +439,7 @@ body[data-arena="grove"] #screen-game {
   position: relative;
   border-top: 4px solid var(--dcolor, var(--accent));
   user-select: none;
+  overflow: hidden;
 }
 .mini-card.sick { opacity: 0.6; }
 .mini-card.selectable { border-color: var(--accent-2); cursor: pointer; box-shadow: 0 0 8px rgba(255,180,84,0.5); }
@@ -442,7 +447,7 @@ body[data-arena="grove"] #screen-game {
 .mini-card.selected { border-color: var(--accent); box-shadow: 0 0 10px rgba(79,209,197,0.7); }
 .mini-card .mc-name { font-weight: 600; min-height: 26px; }
 .mini-card .mc-kw { color: var(--accent-2); font-size: 9.5px; min-height: 12px; }
-.mini-card .mc-stats { display: flex; justify-content: space-between; gap: 3px; margin-top: 6px; font-weight: 800; font-size: 12px; }
+.mini-card .mc-stats { display: flex; justify-content: space-between; gap: 2px; margin-top: 6px; font-weight: 800; font-size: 10.5px; }
 .mini-card .mc-atk { color: #ff8a65; }
 .mini-card .mc-def { color: #64b5f6; }
 .mini-card .mc-hp { color: #81c784; }
@@ -1011,6 +1016,7 @@ body[data-arena="grove"] #screen-game {
   .hero-portrait { width: 40px; height: 40px; font-size: 20px; }
 
   .mini-card { width: 74px; min-height: 96px; font-size: 10px; }
+  .mini-card .mc-stats { font-size: 9px; gap: 1px; }
   .hand-card { width: 82px; min-height: 130px; font-size: 10px; }
   .hand-row { gap: 5px; padding: 8px; min-height: 0; }
   .board-row { gap: 5px; padding: 6px; min-height: 88px; }

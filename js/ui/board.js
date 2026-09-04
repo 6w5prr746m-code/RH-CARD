@@ -886,7 +886,7 @@ function miniCardHtml(state, ownerId, card, opts) {
       <div class="mc-stats">
         <span class="mc-atk">${atk}</span>
         <span class="mc-def">${def}</span>
-        <span class="mc-hp">${card.currentHp}/${card.maxHp}</span>
+        <span class="mc-hp">${card.currentHp}${card.currentHp !== card.maxHp ? `/${card.maxHp}` : ''}</span>
       </div>
     </div>`;
 }
