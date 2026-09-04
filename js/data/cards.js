@@ -89,6 +89,15 @@ const DOMAIN_FACE_ICONS = {
   [DOMAIN.TRANSVERSAL]: '🤖',
 };
 
+// Domain -> file extension for hero avatars with a real illustration at
+// art/heroes/hero-<slug>.<ext> (slug = domain key lowercased, underscores to
+// hyphens — e.g. DOMAIN.TALENT_PERF -> art/heroes/hero-talent-perf.jpg).
+// Same real-art-with-fallback pattern as REAL_ART_IDS in cardart.js: empty
+// until portraits are generated and dropped in — see
+// docs/hero-portrait-prompts.md for the per-domain prompts used to generate
+// them externally.
+const HERO_FACE_REAL_IDS = new Map([]);
+
 // One hero power per domain, auto-assigned to each player from their deck's
 // dominant domain (see computeDominantDomain in engine.js) — no separate
 // "pick a hero" step, it just follows whatever the deck is already built

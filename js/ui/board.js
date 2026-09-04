@@ -632,8 +632,15 @@ function heroPortraitDomain(seatId, playerState) {
 function renderHeroPortrait(elId, seatId, playerState) {
   const domain = heroPortraitDomain(seatId, playerState);
   const el = document.getElementById(elId);
+  const emoji = DOMAIN_FACE_ICONS[domain] || '🏢';
   el.style.setProperty('--dcolor', DOMAIN_COLORS[domain] || '#4fd1c5');
-  el.textContent = DOMAIN_FACE_ICONS[domain] || '🏢';
+  if (HERO_FACE_REAL_IDS.has(domain)) {
+    const ext = HERO_FACE_REAL_IDS.get(domain);
+    const slug = domain.toLowerCase().replace(/_/g, '-');
+    el.innerHTML = `<img class="hero-portrait-img" src="art/heroes/hero-${slug}.${ext}" alt="" onerror="this.outerHTML='${emoji}';">`;
+  } else {
+    el.textContent = emoji;
+  }
   el.parentElement.title = domain === DOMAIN.TRANSVERSAL
     ? (seatId === 'player' ? 'Votre héros — PeopleSpheres' : 'Héros adverse — PeopleSpheres')
     : `${seatId === 'player' ? 'Votre héros' : 'Héros adverse'} — ${DOMAIN_LABELS[domain]}`;
