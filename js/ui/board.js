@@ -1318,12 +1318,12 @@ function showGameOver() {
   // The 'player' seat is the only one carrying a persistent level profile
   // (see engine.js), regardless of vs-AI/campaign/local2p — so its own
   // win/loss/draw (not the local2p-aware playerWonVsAi above) decides XP.
+  // Shown inline in the game-over modal below (not as a #toast) — a toast
+  // that auto-hides after a couple seconds is easy to miss on a screen
+  // this busy, and its fixed bottom-center position can otherwise land
+  // right on top of the modal's own bottom-center action buttons.
   const playerCardResult = draw ? 'draw' : (gameState.winner === 'player' ? 'win' : 'loss');
   const leveledUpCards = awardCardLevelXp(gameState.players.player, playerCardResult);
-  if (leveledUpCards.length > 0) {
-    const msg = leveledUpCards.map(c => `🎉 ${c.name} passe ${levelLabel(c.newLevel)} !`).join(' ');
-    showToast(msg, 'success');
-  }
 
   const title = draw ? 'Égalité' : local ? `${winnerName} remporte le duel !` : (playerWonVsAi ? 'Victoire !' : 'Défaite');
   const subtitle = draw ? 'Les deux héros tombent ensemble.'
@@ -1360,6 +1360,7 @@ function showGameOver() {
           ${shareChips.map(c => `<div class="go-chip"><div class="go-chip-value">${c.value}</div><div class="go-chip-label">${c.label}</div></div>`).join('')}
         </div>
         ${newAchievements.length ? `<div class="go-achievement">🏆 ${newAchievements[0].label}${newAchievements.length > 1 ? ` (+${newAchievements.length - 1} autre${newAchievements.length > 2 ? 's' : ''})` : ''}</div>` : ''}
+        ${leveledUpCards.length ? `<div class="go-achievement go-levelup">📈 ${leveledUpCards.map(c => `${c.name} → ${levelLabel(c.newLevel)}`).join(' · ')}</div>` : ''}
         <div class="go-hp-chart-wrap">
           <div class="go-hp-chart-legend">
             <span><i style="background:var(--accent)"></i>${seatLabel('player')}</span>

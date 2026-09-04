@@ -595,6 +595,7 @@ body[data-arena="grove"] #screen-game {
   background: rgba(255,180,84,0.12); border: 1px solid var(--accent-2); color: var(--accent-2);
   border-radius: 8px; padding: 8px 12px; font-weight: 700; font-size: 13px; margin: 10px auto; max-width: 420px;
 }
+.go-achievement.go-levelup { background: rgba(79,209,122,0.12); border-color: #4fd17a; color: #4fd17a; }
 
 .go-hp-chart-wrap { background: var(--bg-panel-2); border-radius: 10px; padding: 10px 12px 4px; margin: 10px 0; }
 .go-hp-chart-legend { display: flex; gap: 16px; justify-content: center; font-size: 11px; color: var(--text-dim); margin-bottom: 4px; }
@@ -953,6 +954,11 @@ body[data-arena="grove"] #screen-game {
    showToast(msg, 'success') — used for the card level-up notification —
    overrides it to green. !important is required to beat the inline style. */
 #toast.toast-success { border-color: #4fd17a !important; }
+/* A notification must never eat clicks meant for whatever's underneath it —
+   #toast's fixed bottom-center position can end up over a modal's button
+   row (e.g. the game-over screen's own bottom-center action buttons) on
+   some viewport heights. */
+#toast { pointer-events: none; }
 
 .cz-flavor {
   font-size: 11.5px; line-height: 1.4; font-style: italic; color: rgba(255,255,255,0.68);
